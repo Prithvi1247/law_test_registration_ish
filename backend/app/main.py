@@ -22,6 +22,19 @@ from models.test_date import TestDate
 from models.test_centre import TestCentre
 from schemas.test_selection import TestSelectionCreate
 
+from fastapi import File, UploadFile, HTTPException
+from uuid import uuid4
+
+from app.storage import supabase, BUCKET_NAME, test_storage
+from models.document import ApplicantDocument
+
+from models.education import ApplicantEducation
+from models.test_date import TestDate
+from models.city_preference import ApplicantCityPreference
+from models.document import ApplicantDocument
+
+from schemas.review import ReviewResponse
+
 app = FastAPI(title="SLAT Registration API")
 
 
@@ -223,4 +236,85 @@ def save_test_selection(
 
     return {
         "message": "Test preferences saved successfully"
+    }
+
+@app.post("/applicants/{applicant_id}/documents")
+async def upload_document(
+    applicant_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    # Check applicant
+    applicant = db.query(Applicant).filter(
+        Applicant.id == applicant_id
+    ).first()
+
+    if not applicant:
+        raise HTTPException(
+            status_code=404,
+            detail="Applicant not found"
+        )
+
+    # Basic file validation
+    allowed_types = {
+        "image/jpeg",
+        "image/png"
+    }
+
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Only JPG and PNG images are allowed"
+        )
+
+    # Read file
+    file_bytes = await file.read()
+
+    # 2 MB limit
+    if len(file_bytes) > 2 * 1024 * 1024:
+        raise HTTPException(
+            status_code=400,
+            detail="File size must be below 2 MB"
+        )
+
+    # Generate unique storage path
+    extension = file.filename.split(".")[-1]
+    file_path = f"{applicant_id}/{uuid4()}.{extension}"
+
+    print(test_storage(supabase))
+
+    # Upload to Supabase Storage
+    try:
+        supabase.storage.from_(BUCKET_NAME).upload(
+            file_path,
+            file_bytes,
+            {
+                "content-type": file.content_type
+            }
+        )
+    except Exception as e:
+        print("STORAGE ERROR:", repr(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Storage upload failed: {str(e)}"
+        )
+
+    # Save metadata in PostgreSQL
+    document = ApplicantDocument(
+        applicant_id=applicant_id,
+        document_type="PHOTO",
+        file_url=file_path,
+        original_filename=file.filename,
+        mime_type=file.content_type,
+        file_size_bytes=len(file_bytes)
+    )
+
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+
+    return {
+        "message": "Document uploaded successfully",
+        "document_id": document.id,
+        "document_type": document.document_type
     }
