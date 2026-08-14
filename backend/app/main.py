@@ -318,3 +318,72 @@ async def upload_document(
         "document_id": document.id,
         "document_type": document.document_type
     }
+
+
+@app.get(
+    "/applicants/{applicant_id}/review",
+    response_model=ReviewResponse
+)
+def get_application_review(
+    applicant_id: int,
+    db: Session = Depends(get_db)
+):
+    applicant = db.query(Applicant).filter(
+        Applicant.id == applicant_id
+    ).first()
+
+    if not applicant:
+        raise HTTPException(
+            status_code=404,
+            detail="Applicant not found"
+        )
+
+    education = db.query(ApplicantEducation).filter(
+        ApplicantEducation.applicant_id == applicant_id
+    ).first()
+
+    test_selection = db.query(ApplicantTestSelection).filter(
+        ApplicantTestSelection.applicant_id == applicant_id
+    ).first()
+
+    test_date = None
+
+    if test_selection:
+        test_date = db.query(TestDate).filter(
+            TestDate.id == test_selection.test_date_id
+        ).first()
+
+    preferences = (
+        db.query(
+            ApplicantCityPreference,
+            TestCentre
+        )
+        .join(
+            TestCentre,
+            ApplicantCityPreference.test_centre_id == TestCentre.id
+        )
+        .filter(
+            ApplicantCityPreference.applicant_id == applicant_id
+        )
+        .order_by(ApplicantCityPreference.preference_rank)
+        .all()
+    )
+
+    documents = db.query(ApplicantDocument).filter(
+        ApplicantDocument.applicant_id == applicant_id
+    ).all()
+
+    return {
+        "personal": applicant,
+        "education": education,
+        "test_date": test_date,
+        "city_preferences": [
+            {
+                "preference_rank": preference.preference_rank,
+                "city": centre.city,
+                "state": centre.state
+            }
+            for preference, centre in preferences
+        ],
+        "documents": documents
+    }
