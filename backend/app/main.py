@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from models.user import User
-from schemas.user import UserResponse, UserCreate
+from schemas.user import UserResponse, UserCreate, UserLogin
 from app.dependencies import get_db
 from models.education import ApplicantEducation
 from schemas.education import EducationCreate, EducationResponse
@@ -35,6 +35,9 @@ from models.document import ApplicantDocument
 
 from schemas.review import ReviewResponse
 from app.security import hash_password
+from sqlalchemy import or_
+from app.security import verify_password
+from fastapi import HTTPException
 
 app = FastAPI(title="SLAT Registration API")
 
@@ -59,19 +62,48 @@ def get_users(db: Session = Depends(get_db)):
     return users
 
 @app.post("/users", response_model = UserResponse)
-@app.post("/users", response_model=UserResponse)
 def create_user(
     user_data: UserCreate,
     db: Session = Depends(get_db)
 ):
     user = User(
         email=user_data.email,
+        mobile_number=user_data.mobile_number,
         password_hash=hash_password(user_data.password)
     )
 
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    return user
+
+@app.post("/login", response_model=UserResponse)
+def login(
+    login_data: UserLogin,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(
+        or_(
+            User.email == login_data.identifier,
+            User.mobile_number == login_data.identifier
+        )
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email/mobile or password"
+        )
+
+    if not user.password_hash or not verify_password(
+        login_data.password,
+        user.password_hash
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email/mobile or password"
+        )
 
     return user
 

@@ -9,3 +9,9 @@ class UserResponse(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
+    mobile_number: str
+    password: str
+
+class UserLogin(BaseModel):
+    identifier: str
+    password: str
