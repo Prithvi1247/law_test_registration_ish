@@ -34,6 +34,7 @@ from models.city_preference import ApplicantCityPreference
 from models.document import ApplicantDocument
 
 from schemas.review import ReviewResponse
+from app.security import hash_password
 
 app = FastAPI(title="SLAT Registration API")
 
@@ -58,12 +59,14 @@ def get_users(db: Session = Depends(get_db)):
     return users
 
 @app.post("/users", response_model = UserResponse)
+@app.post("/users", response_model=UserResponse)
 def create_user(
     user_data: UserCreate,
-    db : Session = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     user = User(
-        email=user_data.email
+        email=user_data.email,
+        password_hash=hash_password(user_data.password)
     )
 
     db.add(user)

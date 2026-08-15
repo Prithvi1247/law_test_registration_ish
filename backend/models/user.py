@@ -25,6 +25,12 @@ class User(Base):
         nullable=False
     )
 
+    mobile_number: Mapped[str | None] = mapped_column(
+        String(20),
+        unique=True,
+        nullable=True
+    )
+    
     password_hash: Mapped[str | None] = mapped_column(Text)
 
     is_verified: Mapped[bool] = mapped_column(
