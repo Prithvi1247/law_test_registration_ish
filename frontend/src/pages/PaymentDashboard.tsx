@@ -140,7 +140,7 @@ export function PaymentDashboard() {
                     <td>{i + 1}</td>
                     <td>{td.test_name}</td>
                     <td>₹{td.charges}</td>
-                    <td>₹{dashboard.amount_payable}</td>
+                    <td>₹{td.charges}</td>
                     <td><StatusPill status={dashboard.payment?.payment_status ?? "Not Paid"} /></td>
                     <td>{dashboard.payment?.payment_method ? METHOD_LABELS[dashboard.payment.payment_method] : "—"}</td>
                     <td>{dashboard.payment ? new Date(dashboard.payment.updated_at).toLocaleDateString() : "—"}</td>
