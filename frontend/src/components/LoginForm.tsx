@@ -5,13 +5,13 @@ import { ApiError, NetworkError } from "../api/client";
 import { useOnboarding } from "../state/OnboardingContext";
 import { validateLoginForm, isValid, type LoginFormValues, type LoginFormErrors } from "../validation/auth";
 import "./AuthForm.css";
+import { getApplicantByUserId } from "../api/applicants";
 
 const emptyValues: LoginFormValues = { identifier: "", password: "" };
 
 export function LoginForm() {
   const navigate = useNavigate();
-  const { setUserId } = useOnboarding();
-
+  const { setUserId, setApplicantId, setIsSubmitted } = useOnboarding();
   const [values, setValues] = useState<LoginFormValues>(emptyValues);
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -33,16 +33,39 @@ export function LoginForm() {
     setIsSubmitting(true);
     try {
       const user = await login({
-        identifier: values.identifier.trim(),
-        password: values.password,
-      });
-      setUserId(user.id);
+  identifier: values.identifier.trim(),
+  password: values.password,
+});
 
-      // Backend gap #1 (no find-applicant-by-user endpoint): we cannot
-      // tell here whether this user already has a draft/submitted
-      // application. Always land on Personal Details for now — see
-      // architecture review for what unblocks resume/dashboard routing.
+setUserId(user.id);
+
+try {
+    const applicant = await getApplicantByUserId(user.id);
+
+    // Existing applicant found.
+    setApplicantId(applicant.id);
+
+    if (applicant.status === "submitted") {
+      // Application is complete and locked.
+      // Go directly to the payment dashboard.
+      setIsSubmitted(true);
+      navigate("/payment");
+    } else {
+      // Existing draft application.
+      // Personal Details will load the saved data and allow editing.
+      setIsSubmitted(false);
       navigate("/apply/personal");
+    }
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      // Valid user, but no applicant/application exists yet.
+      setApplicantId(null);
+      setIsSubmitted(false);
+      navigate("/apply/personal");
+    } else {
+      throw err;
+    }
+}
     } catch (err) {
       if (err instanceof ApiError || err instanceof NetworkError) {
         setSubmitError(err.message);

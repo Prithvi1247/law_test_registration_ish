@@ -138,6 +138,29 @@ def login(
 
     return user
 
+@app.get("/users/{user_id}/applicant", response_model=ApplicantResponse)
+def get_user_applicant(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Return the existing applicant/application for a user.
+
+    Used after login so the frontend can determine whether to start a new
+    application, resume a draft application, or go directly to payment.
+    """
+    applicant = db.query(Applicant).filter(
+        Applicant.user_id == user_id
+    ).first()
+
+    if not applicant:
+        raise HTTPException(
+            status_code=404,
+            detail="No application found for this user."
+        )
+
+    return applicant
+
 @app.post("/applicants", response_model=ApplicantResponse)
 def create_applicant(
     applicant_data: ApplicantCreate,

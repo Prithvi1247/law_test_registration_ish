@@ -26,3 +26,6 @@ export async function submitApplicant(applicantId: number): Promise<Applicant> {
     method: "POST",
   });
 }
+export async function getApplicantByUserId(userId: number): Promise<Applicant> {
+  return apiRequest<Applicant>(`/users/${userId}/applicant`);
+}
