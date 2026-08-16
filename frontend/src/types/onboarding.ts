@@ -61,7 +61,7 @@ export interface OnboardingState {
 export const emptyPersonalDetails: PersonalDetails = {
   full_name: "",
   date_of_birth: "",
-  nationality: "",
+  nationality: "India",
   is_nri: null,
   country_code: "+91",
   mobile_number: "",
@@ -172,7 +172,14 @@ export interface UpdateApplicantRequest {
 export interface User {
   id: number;
   email: string;
+  mobile_number: string | null;
   is_verified: boolean;
+}
+
+export interface SendOtpResponse {
+  message: string;
+  expires_in_seconds: number;
+  dev_otp: string | null;
 }
 
 // POST /users request (UserCreate)
@@ -187,6 +194,10 @@ export interface LoginRequest {
   identifier: string;
   password: string;
 }
+
+// ---------------------------------------------------------------------
+// Payment types
+// ---------------------------------------------------------------------
 
 export type PaymentMethod = "BILLDESK" | "EASEBUZZ" | "DEMAND_DRAFT";
 export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";

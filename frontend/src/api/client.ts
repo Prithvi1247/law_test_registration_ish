@@ -1,7 +1,7 @@
 // Minimal REST client wrapper.
 // All backend calls go through here so error handling (network errors,
 // 400/404/500, malformed JSON) is handled consistently in one place.
-
+// client.ts
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export class ApiError extends Error {

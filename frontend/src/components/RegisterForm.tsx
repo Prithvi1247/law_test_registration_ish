@@ -15,7 +15,7 @@ const emptyValues: RegisterFormValues = {
 
 export function RegisterForm() {
   const navigate = useNavigate();
-  const { setUserId } = useOnboarding();
+  const { setUserId, setUserMobile } = useOnboarding();
 
   const [values, setValues] = useState<RegisterFormValues>(emptyValues);
   const [errors, setErrors] = useState<RegisterFormErrors>({});
@@ -43,7 +43,8 @@ export function RegisterForm() {
         password: values.password,
       });
       setUserId(user.id);
-      navigate("/apply/personal");
+      setUserMobile(user.mobile_number);
+      navigate("/verify-otp");
     } catch (err) {
       if (err instanceof ApiError || err instanceof NetworkError) {
         setSubmitError(err.message);

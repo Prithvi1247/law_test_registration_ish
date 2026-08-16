@@ -4,10 +4,14 @@ import type { OnboardingState } from "../types/onboarding";
 interface OnboardingContextValue extends OnboardingState {
   testDateIds: number[];
   isSubmitted: boolean;
+  userMobile: string | null;
+  isVerified: boolean;
   setUserId: (id: number) => void;
   setApplicantId: (id: number) => void;
   setTestDateIds: (ids: number[]) => void;
-  setIsSubmitted: (value: boolean) => void;
+  setIsSubmitted: (submitted: boolean) => void;
+  setUserMobile: (mobile: string | null) => void;
+  setIsVerified: (verified: boolean) => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
@@ -24,20 +28,26 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [userId, setUserIdState] = useState<number | null>(null);
   const [applicantId, setApplicantIdState] = useState<number | null>(null);
   const [testDateIds, setTestDateIdsState] = useState<number[]>([]);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitted, setIsSubmittedState] = useState(false);
+  const [userMobile, setUserMobileState] = useState<string | null>(null);
+  const [isVerified, setIsVerifiedState] = useState(false);
 
   const value = useMemo<OnboardingContextValue>(
     () => ({
       userId,
       applicantId,
       testDateIds,
+      isSubmitted,
+      userMobile,
+      isVerified,
       setUserId: setUserIdState,
       setApplicantId: setApplicantIdState,
       setTestDateIds: setTestDateIdsState,
-      isSubmitted,
-      setIsSubmitted,
+      setIsSubmitted: setIsSubmittedState,
+      setUserMobile: setUserMobileState,
+      setIsVerified: setIsVerifiedState,
     }),
-    [userId, applicantId, testDateIds, isSubmitted]
+    [userId, applicantId, testDateIds, isSubmitted, userMobile, isVerified]
   );
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;

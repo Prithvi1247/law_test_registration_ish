@@ -6,6 +6,7 @@ import { createApplicant, updateApplicant } from "../api/applicants";
 import { getApplicationReview } from "../api/review";
 import { ApiError, NetworkError } from "../api/client";
 import { useOnboarding } from "../state/OnboardingContext";
+import { NATIONALITY_OPTIONS } from "./constants/nationalities";
 import "./PersonalDetailsForm.css";
 
 // Category list is a UI-only convenience for the <select>; the value sent
@@ -14,14 +15,26 @@ const CATEGORY_OPTIONS = ["General", "OBC", "SC", "ST", "EWS"];
 
 export function PersonalDetailsForm() {
   const navigate = useNavigate();
-  // ProtectedRoute guarantees userId is set before this component mounts.
-  const { userId, applicantId, setApplicantId } = useOnboarding();
+  // ProtectedRoute guarantees userId is set (and the account verified)
+  // before this component mounts.
+  const { userId, applicantId, setApplicantId, userMobile } = useOnboarding();
 
   const [values, setValues] = useState<PersonalDetails>(emptyPersonalDetails);
   const [errors, setErrors] = useState<PersonalDetailsErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+
+  // Mobile number is a USER-level, registered field — always shown from
+  // context, never from what the user might type. Falls back to whatever
+  // the saved applicant record has if context wasn't populated (e.g. a
+  // hard refresh mid-session), since that value is still the same
+  // authoritative user mobile the backend enforces server-side.
+  useEffect(() => {
+    if (userMobile) {
+      setValues((prev) => ({ ...prev, mobile_number: userMobile }));
+    }
+  }, [userMobile]);
 
   // Edit mode: prefill from the current DB state (not stale context) so
   // Review → Edit always shows what's actually saved.
@@ -37,7 +50,7 @@ export function PersonalDetailsForm() {
           nationality: p.nationality,
           is_nri: p.is_nri,
           country_code: p.country_code,
-          mobile_number: p.mobile_number,
+          mobile_number: userMobile ?? p.mobile_number,
           category: p.category,
         });
       })
@@ -46,6 +59,7 @@ export function PersonalDetailsForm() {
         setSubmitError("Could not load your existing details. You can still edit and save below.");
       })
       .finally(() => setIsLoadingExisting(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applicantId]);
 
   function updateField<K extends keyof PersonalDetails>(field: K, value: PersonalDetails[K]) {
@@ -161,14 +175,19 @@ export function PersonalDetailsForm() {
 
       <div className="field">
         <label htmlFor="nationality">Nationality</label>
-        <input
+        <select
           id="nationality"
-          type="text"
           value={values.nationality}
           onChange={(e) => updateField("nationality", e.target.value)}
           aria-invalid={Boolean(errors.nationality)}
           aria-describedby={errors.nationality ? "nationality-error" : undefined}
-        />
+        >
+          {NATIONALITY_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
         {errors.nationality && (
           <p className="field-error" id="nationality-error">
             {errors.nationality}
@@ -215,17 +234,19 @@ export function PersonalDetailsForm() {
         </div>
 
         <div className="field field-grow">
-          <label htmlFor="mobile_number">Mobile Number</label>
+          <label htmlFor="mobile_number">Mobile Number (registered)</label>
           <input
             id="mobile_number"
             type="tel"
             value={values.mobile_number}
-            onChange={(e) => updateField("mobile_number", e.target.value)}
+            readOnly
+            disabled
             aria-invalid={Boolean(errors.mobile_number)}
             aria-describedby={errors.mobile_number ? "mobile_number-error" : undefined}
-            // Structured so a future "Verify" button/OTP step can slot in
-            // next to this field without changing the state shape.
           />
+          <p style={{ fontSize: "0.8rem", color: "#888", margin: "0.25rem 0 0" }}>
+            This is your registered account mobile number and can't be changed here.
+          </p>
           {errors.mobile_number && (
             <p className="field-error" id="mobile_number-error">
               {errors.mobile_number}

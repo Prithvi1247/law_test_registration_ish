@@ -3,14 +3,24 @@ import { Navigate } from "react-router-dom";
 import { useOnboarding } from "../state/OnboardingContext";
 
 /**
- * Gates /apply/* and /dashboard behind having an authenticated userId.
- * Does not create anything — just redirects to /login if missing.
+ * Gates routes behind an authenticated userId, and optionally behind
+ * account verification too. Does not create anything — just redirects.
  */
-export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { userId } = useOnboarding();
+export function ProtectedRoute({
+  children,
+  requireVerified = true,
+}: {
+  children: ReactNode;
+  requireVerified?: boolean;
+}) {
+  const { userId, isVerified } = useOnboarding();
 
   if (userId === null) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (requireVerified && !isVerified) {
+    return <Navigate to="/verify-otp" replace />;
   }
 
   return <>{children}</>;

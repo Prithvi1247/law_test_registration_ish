@@ -13,6 +13,7 @@ import { CityPreferencesStep } from "./components/steps/CityPreferencesStep";
 import { DocumentsStep } from "./components/steps/DocumentsStep";
 import { ReviewStep } from "./components/steps/ReviewStep";
 import { PaymentDashboard } from "./pages/PaymentDashboard";
+import { VerifyOtpPage } from "./pages/VerifyOtpPage";
 
 export function App() {
   return (
@@ -22,6 +23,15 @@ export function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
+
+          <Route
+            path="/verify-otp"
+            element={
+              <ProtectedRoute requireVerified={false}>
+                <VerifyOtpPage />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/apply"
@@ -38,7 +48,6 @@ export function App() {
             <Route path="preferences" element={<CityPreferencesStep />} />
             <Route path="documents" element={<DocumentsStep />} />
             <Route path="review" element={<ReviewStep />} />
-
           </Route>
 
           <Route
@@ -58,6 +67,8 @@ export function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </OnboardingProvider>

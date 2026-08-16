@@ -43,11 +43,17 @@ from models.payment import Payment
 from schemas.payment import PaymentInitiate, PaymentResponse, PaymentDashboardResponse, PaymentTestDateLine
 from app.fees import TEST_FEE_INR, PROGRAMME_REGISTRATION_FEE_INR, calculate_amount_payable
 
+from models.otp import UserOtp
+from schemas.otp import SendOtpRequest, SendOtpResponse, VerifyOtpRequest
+from app.otp import (
+    generate_otp, otp_expiry, is_expired, send_otp_dev,
+    RESEND_COOLDOWN_SECONDS, MAX_VERIFY_ATTEMPTS, OTP_TTL_SECONDS, DEV_EXPOSE_OTP
+)
+from datetime import datetime, timezone, timedelta
+
 app = FastAPI(title="SLAT Registration API")
 
 
-# NEW — shared guard for the DRAFT-editable / SUBMITTED-read-only lifecycle.
-# Uses the existing Applicant.status field; no new status system.
 def ensure_draft(applicant: Applicant):
     if applicant.status != "draft":
         raise HTTPException(
@@ -66,8 +72,6 @@ def create_user(
     user_data: UserCreate,
     db: Session = Depends(get_db)
 ):
-    # Give the frontend a useful 409 instead of allowing a PostgreSQL
-    # UNIQUE violation to become a 500 response.
     if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(
             status_code=409,
@@ -92,10 +96,6 @@ def create_user(
         db.refresh(user)
     except IntegrityError as exc:
         db.rollback()
-
-        # The pre-checks above handle normal duplicate registration.
-        # This catches a race condition where another request inserts the
-        # same unique value between the check and the commit.
         constraint = str(getattr(exc.orig, "diag", None) and exc.orig.diag.constraint_name or "")
 
         if constraint == "users_email_key":
@@ -122,42 +122,120 @@ def login(
     ).first()
 
     if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email/mobile or password"
-        )
+        raise HTTPException(status_code=401, detail="Invalid email/mobile or password")
 
-    if not user.password_hash or not verify_password(
-        login_data.password,
-        user.password_hash
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email/mobile or password"
-        )
+    if not user.password_hash or not verify_password(login_data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email/mobile or password")
 
     return user
+
+@app.post("/users/send-otp", response_model=SendOtpResponse)
+def send_otp(
+    payload: SendOtpRequest,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == payload.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="This account is already verified.")
+
+    # Resend cooldown — check the most recent OTP row for this user.
+    last_otp = (
+        db.query(UserOtp)
+        .filter(UserOtp.user_id == user.id)
+        .order_by(UserOtp.created_at.desc())
+        .first()
+    )
+    if last_otp:
+        created_at = last_otp.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        elapsed = (datetime.now(timezone.utc) - created_at).total_seconds()
+        if elapsed < RESEND_COOLDOWN_SECONDS:
+            wait = int(RESEND_COOLDOWN_SECONDS - elapsed)
+            raise HTTPException(
+                status_code=429,
+                detail=f"Please wait {wait} seconds before requesting another OTP."
+            )
+
+    otp = generate_otp()
+
+    otp_row = UserOtp(
+        user_id=user.id,
+        otp_hash=hash_password(otp),  # reuses existing bcrypt hashing utility
+        expires_at=otp_expiry(),
+        is_used=False,
+        attempt_count=0
+    )
+    db.add(otp_row)
+    db.commit()
+
+    send_otp_dev(otp, user.id)  # dev-only console log; real SMS/email provider plugs in here later
+
+    return SendOtpResponse(
+        message="OTP sent.",
+        expires_in_seconds=OTP_TTL_SECONDS,
+        dev_otp=otp if DEV_EXPOSE_OTP else None
+    )
+
+
+@app.post("/users/verify-otp", response_model=UserResponse)
+def verify_otp(
+    payload: VerifyOtpRequest,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == payload.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="This account is already verified.")
+
+    otp_row = (
+        db.query(UserOtp)
+        .filter(UserOtp.user_id == user.id, UserOtp.is_used == False)
+        .order_by(UserOtp.created_at.desc())
+        .first()
+    )
+
+    if not otp_row:
+        raise HTTPException(status_code=400, detail="No OTP was requested. Please request a new OTP.")
+
+    if is_expired(otp_row.expires_at):
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+
+    if otp_row.attempt_count >= MAX_VERIFY_ATTEMPTS:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many incorrect attempts. Please request a new OTP."
+        )
+
+    if not verify_password(payload.otp, otp_row.otp_hash):
+        otp_row.attempt_count += 1
+        db.commit()
+        raise HTTPException(status_code=400, detail="Incorrect OTP.")
+
+    otp_row.is_used = True
+    user.is_verified = True
+    db.commit()
+    db.refresh(user)
+
+    return user
+
 
 @app.get("/users/{user_id}/applicant", response_model=ApplicantResponse)
 def get_user_applicant(
     user_id: int,
     db: Session = Depends(get_db)
 ):
-    """
-    Return the existing applicant/application for a user.
-
-    Used after login so the frontend can determine whether to start a new
-    application, resume a draft application, or go directly to payment.
-    """
     applicant = db.query(Applicant).filter(
         Applicant.user_id == user_id
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="No application found for this user."
-        )
+        raise HTTPException(status_code=404, detail="No application found for this user.")
 
     return applicant
 
@@ -166,28 +244,30 @@ def create_applicant(
     applicant_data: ApplicantCreate,
     db: Session = Depends(get_db)
 ):
-    # Applicant.user_id is a 1:1 relationship. Never create a second
-    # application for the same user.
     existing_applicant = db.query(Applicant).filter(
         Applicant.user_id == applicant_data.user_id
     ).first()
 
     if existing_applicant:
-        raise HTTPException(
-            status_code=409,
-            detail="An application already exists for this user."
-        )
+        raise HTTPException(status_code=409, detail="An application already exists for this user.")
+
+    # Mobile number is a USER-level, registered/verified field. Never trust
+    # a mobile_number submitted in the payload — always use the value on
+    # the user's own record so applicant and account can't diverge.
+    owner = db.query(User).filter(User.id == applicant_data.user_id).first()
+    if not owner:
+        raise HTTPException(status_code=404, detail="User not found")
 
     applicant = Applicant(
         user_id=applicant_data.user_id,
         full_name=applicant_data.full_name,
         date_of_birth=applicant_data.date_of_birth,
         country_code=applicant_data.country_code,
-        mobile_number=applicant_data.mobile_number,
+        mobile_number=owner.mobile_number,
         category=applicant_data.category,
         is_nri=applicant_data.is_nri,
         nationality=applicant_data.nationality,
-        status="draft" # status set by default as draft
+        status="draft"
     )
 
     db.add(applicant)
@@ -197,8 +277,6 @@ def create_applicant(
     return applicant
 
 
-# NEW — supports editing Personal Details from Review without creating a
-# second applicant. Does not touch user_id or status.
 @app.patch("/applicants/{applicant_id}", response_model=ApplicantResponse)
 def update_applicant(
     applicant_id: int,
@@ -210,17 +288,16 @@ def update_applicant(
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="Applicant not found"
-        )
+        raise HTTPException(status_code=404, detail="Applicant not found")
 
     ensure_draft(applicant)
+
+    owner = db.query(User).filter(User.id == applicant.user_id).first()
 
     applicant.full_name = applicant_data.full_name
     applicant.date_of_birth = applicant_data.date_of_birth
     applicant.country_code = applicant_data.country_code
-    applicant.mobile_number = applicant_data.mobile_number
+    applicant.mobile_number = owner.mobile_number if owner else applicant_data.mobile_number
     applicant.category = applicant_data.category
     applicant.is_nri = applicant_data.is_nri
     applicant.nationality = applicant_data.nationality
@@ -244,17 +321,10 @@ def create_education(
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="Applicant not found"
-        )
+        raise HTTPException(status_code=404, detail="Applicant not found")
 
     ensure_draft(applicant)
 
-    # CHANGED: was create-only, which violated the unique applicant_id
-    # constraint on a second call. Now upserts — update the existing row
-    # if one exists, otherwise create it. Endpoint path/method unchanged
-    # so the frontend contract doesn't need to know which case happened.
     education = db.query(ApplicantEducation).filter(
         ApplicantEducation.applicant_id == applicant_id
     ).first()
@@ -293,9 +363,7 @@ def get_test_centres(
     state: str | None = Query(default=None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(TestCentre).filter(
-        TestCentre.is_active == True
-    )
+    query = db.query(TestCentre).filter(TestCentre.is_active == True)
 
     if state:
         query = query.filter(TestCentre.state == state)
@@ -308,76 +376,44 @@ def save_test_selection(
     selection: TestSelectionCreate,
     db: Session = Depends(get_db)
 ):
-    # 1. Check applicant
     applicant = db.query(Applicant).filter(
         Applicant.id == applicant_id
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="Applicant not found"
-        )
+        raise HTTPException(status_code=404, detail="Applicant not found")
 
     ensure_draft(applicant)
 
-    # 2. Check test date
     test_date = db.query(TestDate).filter(
         TestDate.id == selection.test_date_id,
         TestDate.is_active == True
     ).first()
 
     if not test_date:
-        raise HTTPException(
-            status_code=404,
-            detail="Test date not found or inactive"
-        )
+        raise HTTPException(status_code=404, detail="Test date not found or inactive")
 
-    # 3. Check number of preferences
     if not 1 <= len(selection.city_preferences) <= 3:
-        raise HTTPException(
-            status_code=400,
-            detail="You must select between 1 and 3 city preferences"
-        )
+        raise HTTPException(status_code=400, detail="You must select between 1 and 3 city preferences")
 
-    # 4. Check ranks
     ranks = [p.preference_rank for p in selection.city_preferences]
 
     if sorted(ranks) != list(range(1, len(ranks) + 1)):
-        raise HTTPException(
-            status_code=400,
-            detail="Preference ranks must be consecutive starting from 1"
-        )
+        raise HTTPException(status_code=400, detail="Preference ranks must be consecutive starting from 1")
 
-    # 5. Check duplicate centres
-    centre_ids = [
-        p.test_centre_id
-        for p in selection.city_preferences
-    ]
+    centre_ids = [p.test_centre_id for p in selection.city_preferences]
 
     if len(centre_ids) != len(set(centre_ids)):
-        raise HTTPException(
-            status_code=400,
-            detail="The same city cannot be selected more than once"
-        )
+        raise HTTPException(status_code=400, detail="The same city cannot be selected more than once")
 
-    # 6. Check centres exist and are active
     centres = db.query(TestCentre).filter(
         TestCentre.id.in_(centre_ids),
         TestCentre.is_active == True
     ).all()
 
     if len(centres) != len(centre_ids):
-        raise HTTPException(
-            status_code=400,
-            detail="One or more selected cities are invalid"
-        )
+        raise HTTPException(status_code=400, detail="One or more selected cities are invalid")
 
-    # CHANGED: this call is now an upsert for the (applicant_id,
-    # test_date_id) pair — saving Test 1 must never touch Test 2's rows,
-    # and re-saving Test 1 must replace its old preferences, not add to
-    # them. Delete any existing selection + preferences for this specific
-    # test date only, then insert the new ones, all in one transaction.
     db.query(ApplicantCityPreference).filter(
         ApplicantCityPreference.applicant_id == applicant_id,
         ApplicantCityPreference.test_date_id == selection.test_date_id
@@ -388,7 +424,6 @@ def save_test_selection(
         ApplicantTestSelection.test_date_id == selection.test_date_id
     ).delete()
 
-    # 7. Save test selection
     test_selection = ApplicantTestSelection(
         applicant_id=applicant_id,
         test_date_id=selection.test_date_id
@@ -396,7 +431,6 @@ def save_test_selection(
 
     db.add(test_selection)
 
-    # 8. Save city preferences
     for preference in selection.city_preferences:
         city_preference = ApplicantCityPreference(
             applicant_id=applicant_id,
@@ -409,13 +443,9 @@ def save_test_selection(
 
     db.commit()
 
-    return {
-        "message": "Test preferences saved successfully"
-    }
+    return {"message": "Test preferences saved successfully"}
 
 
-# NEW — supports deselecting a test date (Test Date editing). Deletes that
-# date's preferences + selection row only; other test dates are untouched.
 @app.delete("/applicants/{applicant_id}/test-selection/{test_date_id}")
 def delete_test_selection(
     applicant_id: int,
@@ -427,10 +457,7 @@ def delete_test_selection(
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="Applicant not found"
-        )
+        raise HTTPException(status_code=404, detail="Applicant not found")
 
     ensure_draft(applicant)
 
@@ -440,7 +467,6 @@ def delete_test_selection(
     ).first()
 
     if not selection:
-        # Nothing to delete — not an error, just a no-op.
         return {"message": "No selection existed for this test date"}
 
     db.query(ApplicantCityPreference).filter(
@@ -459,75 +485,45 @@ async def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    # Check applicant
     applicant = db.query(Applicant).filter(
         Applicant.id == applicant_id
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="Applicant not found"
-        )
+        raise HTTPException(status_code=404, detail="Applicant not found")
 
     ensure_draft(applicant)
 
-    # Basic file validation
-    allowed_types = {
-        "image/jpeg",
-        "image/png"
-    }
+    allowed_types = {"image/jpeg", "image/png"}
 
     if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400,
-            detail="Only JPG and PNG images are allowed"
-        )
+        raise HTTPException(status_code=400, detail="Only JPG and PNG images are allowed")
 
-    # Read file
     file_bytes = await file.read()
 
-    # 2 MB limit
     if len(file_bytes) > 2 * 1024 * 1024:
-        raise HTTPException(
-            status_code=400,
-            detail="File size must be below 2 MB"
-        )
+        raise HTTPException(status_code=400, detail="File size must be below 2 MB")
 
-    # CHANGED: replace any existing PHOTO instead of creating a second row.
-    # Look up the current PHOTO (if any) BEFORE uploading the new file, so
-    # we still have its storage path to clean up afterwards.
     existing_photo = db.query(ApplicantDocument).filter(
         ApplicantDocument.applicant_id == applicant_id,
         ApplicantDocument.document_type == "PHOTO"
     ).first()
 
-    # Generate unique storage path
     extension = file.filename.split(".")[-1]
     file_path = f"{applicant_id}/{uuid4()}.{extension}"
 
     print(test_storage(supabase))
 
-    # Upload new file to Supabase Storage first — if this fails, the old
-    # photo (if any) is left untouched rather than deleted-then-failed.
     try:
         supabase.storage.from_(BUCKET_NAME).upload(
             file_path,
             file_bytes,
-            {
-                "content-type": file.content_type
-            }
+            {"content-type": file.content_type}
         )
     except Exception as e:
         print("STORAGE ERROR:", repr(e))
-        raise HTTPException(
-            status_code=500,
-            detail=f"Storage upload failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Storage upload failed: {str(e)}")
 
-    # Now that the new file is safely uploaded, remove the old one (best
-    # effort — a storage cleanup failure shouldn't block the replacement
-    # from completing in the database).
     if existing_photo:
         try:
             supabase.storage.from_(BUCKET_NAME).remove([existing_photo.file_url])
@@ -536,7 +532,6 @@ async def upload_document(
 
         db.delete(existing_photo)
 
-    # Save metadata in PostgreSQL
     document = ApplicantDocument(
         applicant_id=applicant_id,
         document_type="PHOTO",
@@ -570,19 +565,12 @@ def get_application_review(
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="Applicant not found"
-        )
+        raise HTTPException(status_code=404, detail="Applicant not found")
 
     education = db.query(ApplicantEducation).filter(
         ApplicantEducation.applicant_id == applicant_id
     ).first()
 
-    # CHANGED: was a single test_selection + flat city_preferences list.
-    # Now fetch every selected test date for this applicant, and for each
-    # one, only the preferences that belong to that (applicant, test_date)
-    # pair — never mixing preferences across dates.
     test_selections = db.query(ApplicantTestSelection).filter(
         ApplicantTestSelection.applicant_id == applicant_id
     ).all()
@@ -598,14 +586,8 @@ def get_application_review(
             continue
 
         preferences = (
-            db.query(
-                ApplicantCityPreference,
-                TestCentre
-            )
-            .join(
-                TestCentre,
-                ApplicantCityPreference.test_centre_id == TestCentre.id
-            )
+            db.query(ApplicantCityPreference, TestCentre)
+            .join(TestCentre, ApplicantCityPreference.test_centre_id == TestCentre.id)
             .filter(
                 ApplicantCityPreference.applicant_id == applicant_id,
                 ApplicantCityPreference.test_date_id == test_selection.test_date_id
@@ -652,10 +634,7 @@ def submit_application(
     ).first()
 
     if not applicant:
-        raise HTTPException(
-            status_code=404,
-            detail="Applicant not found"
-        )
+        raise HTTPException(status_code=404, detail="Applicant not found")
 
     ensure_draft(applicant)
 
@@ -696,10 +675,7 @@ def submit_application(
     if missing:
         raise HTTPException(
             status_code=400,
-            detail={
-                "message": "Application is incomplete.",
-                "missing": missing
-            }
+            detail={"message": "Application is incomplete.", "missing": missing}
         )
 
     applicant.status = "submitted"
@@ -709,10 +685,7 @@ def submit_application(
         db.refresh(applicant)
     except Exception:
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Application submission failed. Please try again."
-        )
+        raise HTTPException(status_code=500, detail="Application submission failed. Please try again.")
 
     return applicant
 

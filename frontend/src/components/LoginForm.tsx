@@ -11,7 +11,8 @@ const emptyValues: LoginFormValues = { identifier: "", password: "" };
 
 export function LoginForm() {
   const navigate = useNavigate();
-  const { setUserId, setApplicantId, setIsSubmitted } = useOnboarding();
+  const { setUserId, setApplicantId, setIsSubmitted, setUserMobile, setIsVerified } = useOnboarding();
+
   const [values, setValues] = useState<LoginFormValues>(emptyValues);
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -33,39 +34,44 @@ export function LoginForm() {
     setIsSubmitting(true);
     try {
       const user = await login({
-  identifier: values.identifier.trim(),
-  password: values.password,
-});
+        identifier: values.identifier.trim(),
+        password: values.password,
+      });
+      setUserId(user.id);
+      setUserMobile(user.mobile_number);
+      setIsVerified(user.is_verified);
 
-setUserId(user.id);
+      if (!user.is_verified) {
+        // Unverified account — OTP verification takes priority over
+        // applicant recovery; nothing past this point should run yet.
+        navigate("/verify-otp");
+        return;
+      }
 
-try {
-    const applicant = await getApplicantByUserId(user.id);
-
-    // Existing applicant found.
-    setApplicantId(applicant.id);
-
-    if (applicant.status === "submitted") {
-      // Application is complete and locked.
-      // Go directly to the payment dashboard.
-      setIsSubmitted(true);
-      navigate("/payment");
-    } else {
-      // Existing draft application.
-      // Personal Details will load the saved data and allow editing.
-      setIsSubmitted(false);
-      navigate("/apply/personal");
-    }
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) {
-      // Valid user, but no applicant/application exists yet.
-      setApplicantId(null);
-      setIsSubmitted(false);
-      navigate("/apply/personal");
-    } else {
-      throw err;
-    }
-}
+      try {
+        const applicant = await getApplicantByUserId(user.id);
+        // Existing applicant found.
+        setApplicantId(applicant.id);
+        if (applicant.status === "submitted") {
+          // Application is complete and locked.
+          setIsSubmitted(true);
+          navigate("/payment");
+        } else {
+          // Existing draft application — Personal Details loads the
+          // saved data and allows editing.
+          setIsSubmitted(false);
+          navigate("/apply/personal");
+        }
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          // Valid user, but no applicant/application exists yet.
+          setApplicantId(null);
+          setIsSubmitted(false);
+          navigate("/apply/personal");
+        } else {
+          throw err;
+        }
+      }
     } catch (err) {
       if (err instanceof ApiError || err instanceof NetworkError) {
         setSubmitError(err.message);

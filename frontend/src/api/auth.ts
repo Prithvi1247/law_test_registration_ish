@@ -1,3 +1,4 @@
+// auth.ts
 import { apiRequest } from "./client";
 import type { LoginRequest, User } from "../types/onboarding";
 

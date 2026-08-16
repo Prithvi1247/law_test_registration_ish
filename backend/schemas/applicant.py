@@ -1,5 +1,9 @@
 from pydantic import BaseModel
 from datetime import date, time
+from typing import Literal
+
+CATEGORY_OPTIONS = ("General", "OBC", "SC", "ST", "EWS")
+Category = Literal["General", "OBC", "SC", "ST", "EWS"]
 
 
 class ApplicantCreate(BaseModel):
@@ -8,7 +12,7 @@ class ApplicantCreate(BaseModel):
     date_of_birth: date
     country_code: str
     mobile_number: str
-    category: str
+    category: Category
     is_nri: bool
     nationality: str
 
@@ -20,7 +24,7 @@ class ApplicantUpdate(BaseModel):
     date_of_birth: date
     country_code: str
     mobile_number: str
-    category: str
+    category: Category
     is_nri: bool
     nationality: str
 

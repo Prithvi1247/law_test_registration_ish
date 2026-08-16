@@ -7,7 +7,7 @@ import type { Applicant, CreateApplicantRequest, UpdateApplicantRequest } from "
 export async function createApplicant(payload: CreateApplicantRequest): Promise<Applicant> {
   return apiRequest<Applicant>("/applicants", {
     method: "POST",
-    body: payload, // raw object — apiRequest is the only place that stringifies
+    body: payload,
   });
 }
 
@@ -21,11 +21,22 @@ export async function updateApplicant(applicantId: number, payload: UpdateApplic
   });
 }
 
+/**
+ * POST /applicants/{id}/submit — final submission. On incomplete-application
+ * failure (400), the backend's detail body is { message, missing: string[] }
+ * — read it off ApiError.body, don't guess/hardcode a missing-fields list.
+ */
 export async function submitApplicant(applicantId: number): Promise<Applicant> {
   return apiRequest<Applicant>(`/applicants/${applicantId}/submit`, {
     method: "POST",
   });
 }
+
+/**
+ * GET /users/{user_id}/applicant — used after login to recover an
+ * existing draft/submitted application. Throws ApiError with status 404
+ * (caught by the caller) when the user has no applicant yet.
+ */
 export async function getApplicantByUserId(userId: number): Promise<Applicant> {
   return apiRequest<Applicant>(`/users/${userId}/applicant`);
 }
