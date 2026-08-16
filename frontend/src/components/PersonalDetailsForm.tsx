@@ -135,150 +135,12 @@ export function PersonalDetailsForm() {
   }
 
   return (
-    <form className="personal-details-form" onSubmit={handleSubmit} noValidate>
-      <h2>Personal Details</h2>
-
-      <div className="field">
-        <label htmlFor="full_name">Full Name</label>
-        <input
-          id="full_name"
-          type="text"
-          value={values.full_name}
-          onChange={(e) => updateField("full_name", e.target.value)}
-          aria-invalid={Boolean(errors.full_name)}
-          aria-describedby={errors.full_name ? "full_name-error" : undefined}
-        />
-        {errors.full_name && (
-          <p className="field-error" id="full_name-error">
-            {errors.full_name}
-          </p>
-        )}
-      </div>
-
-      <div className="field">
-        <label htmlFor="date_of_birth">Date of Birth</label>
-        <input
-          id="date_of_birth"
-          type="date"
-          value={values.date_of_birth}
-          max={new Date().toISOString().slice(0, 10)}
-          onChange={(e) => updateField("date_of_birth", e.target.value)}
-          aria-invalid={Boolean(errors.date_of_birth)}
-          aria-describedby={errors.date_of_birth ? "date_of_birth-error" : undefined}
-        />
-        {errors.date_of_birth && (
-          <p className="field-error" id="date_of_birth-error">
-            {errors.date_of_birth}
-          </p>
-        )}
-      </div>
-
-      <div className="field">
-        <label htmlFor="nationality">Nationality</label>
-        <select
-          id="nationality"
-          value={values.nationality}
-          onChange={(e) => updateField("nationality", e.target.value)}
-          aria-invalid={Boolean(errors.nationality)}
-          aria-describedby={errors.nationality ? "nationality-error" : undefined}
-        >
-          {NATIONALITY_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        {errors.nationality && (
-          <p className="field-error" id="nationality-error">
-            {errors.nationality}
-          </p>
-        )}
-      </div>
-
-      <fieldset className="field">
-        <legend>Are you an NRI?</legend>
-        <div className="radio-group">
-          <label>
-            <input
-              type="radio"
-              name="is_nri"
-              checked={values.is_nri === true}
-              onChange={() => updateField("is_nri", true)}
-            />
-            Yes
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="is_nri"
-              checked={values.is_nri === false}
-              onChange={() => updateField("is_nri", false)}
-            />
-            No
-          </label>
-        </div>
-        {errors.is_nri && <p className="field-error">{errors.is_nri}</p>}
-      </fieldset>
-
-      <div className="field-row">
-        <div className="field field-small">
-          <label htmlFor="country_code">Country Code</label>
-          <input
-            id="country_code"
-            type="text"
-            value={values.country_code}
-            onChange={(e) => updateField("country_code", e.target.value)}
-            aria-invalid={Boolean(errors.country_code)}
-          />
-          {errors.country_code && <p className="field-error">{errors.country_code}</p>}
-        </div>
-
-        <div className="field field-grow">
-          <label htmlFor="mobile_number">Mobile Number (registered)</label>
-          <input
-            id="mobile_number"
-            type="tel"
-            value={values.mobile_number}
-            readOnly
-            disabled
-            aria-invalid={Boolean(errors.mobile_number)}
-            aria-describedby={errors.mobile_number ? "mobile_number-error" : undefined}
-          />
-          <p style={{ fontSize: "0.8rem", color: "#888", margin: "0.25rem 0 0" }}>
-            This is your registered account mobile number and can't be changed here.
-          </p>
-          {errors.mobile_number && (
-            <p className="field-error" id="mobile_number-error">
-              {errors.mobile_number}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="field">
-        <label htmlFor="category">Category</label>
-        <select
-          id="category"
-          value={values.category}
-          onChange={(e) => updateField("category", e.target.value)}
-          aria-invalid={Boolean(errors.category)}
-          aria-describedby={errors.category ? "category-error" : undefined}
-        >
-          <option value="" disabled>
-            Select a category
-          </option>
-          {CATEGORY_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        {errors.category && (
-          <p className="field-error" id="category-error">
-            {errors.category}
-          </p>
-        )}
-      </div>
+    <form className="personal-details-form content-card" onSubmit={handleSubmit} noValidate>
+      <p className="content-card__eyebrow">Application · Step 1 of 6</p>
+      <h2 className="content-card__title">Personal Details</h2>
+      <p className="content-card__description">
+        Enter your details exactly as they appear on your official identification documents.
+      </p>
 
       {submitError && (
         <p className="form-error" role="alert">
@@ -286,9 +148,180 @@ export function PersonalDetailsForm() {
         </p>
       )}
 
-      <button type="submit" disabled={isSubmitting || isLoadingExisting}>
-        {isSubmitting ? "Saving…" : "Continue"}
-      </button>
+      <div className="form-section">
+        <h3 className="form-section__title">Personal Information</h3>
+
+        <div className="field">
+          <label htmlFor="full_name">
+            Full Name<span className="required-mark">*</span>
+          </label>
+          <input
+            id="full_name"
+            type="text"
+            value={values.full_name}
+            onChange={(e) => updateField("full_name", e.target.value)}
+            aria-invalid={Boolean(errors.full_name)}
+            aria-describedby={errors.full_name ? "full_name-error" : undefined}
+          />
+          {errors.full_name && (
+            <p className="field-error" id="full_name-error">
+              {errors.full_name}
+            </p>
+          )}
+        </div>
+
+        <div className="field">
+          <label htmlFor="date_of_birth">
+            Date of Birth<span className="required-mark">*</span>
+          </label>
+          <input
+            id="date_of_birth"
+            type="date"
+            value={values.date_of_birth}
+            max={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => updateField("date_of_birth", e.target.value)}
+            aria-invalid={Boolean(errors.date_of_birth)}
+            aria-describedby={errors.date_of_birth ? "date_of_birth-error" : undefined}
+          />
+          {errors.date_of_birth && (
+            <p className="field-error" id="date_of_birth-error">
+              {errors.date_of_birth}
+            </p>
+          )}
+        </div>
+
+        <div className="field">
+          <label htmlFor="nationality">
+            Nationality<span className="required-mark">*</span>
+          </label>
+          <select
+            id="nationality"
+            value={values.nationality}
+            onChange={(e) => updateField("nationality", e.target.value)}
+            aria-invalid={Boolean(errors.nationality)}
+            aria-describedby={errors.nationality ? "nationality-error" : undefined}
+          >
+            {NATIONALITY_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          {errors.nationality && (
+            <p className="field-error" id="nationality-error">
+              {errors.nationality}
+            </p>
+          )}
+        </div>
+
+        <fieldset className="field">
+          <legend>
+            Are you an NRI?<span className="required-mark">*</span>
+          </legend>
+          <div className="radio-group">
+            <label>
+              <input
+                type="radio"
+                name="is_nri"
+                checked={values.is_nri === true}
+                onChange={() => updateField("is_nri", true)}
+              />
+              Yes
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="is_nri"
+                checked={values.is_nri === false}
+                onChange={() => updateField("is_nri", false)}
+              />
+              No
+            </label>
+          </div>
+          {errors.is_nri && <p className="field-error">{errors.is_nri}</p>}
+        </fieldset>
+      </div>
+
+      <div className="form-section">
+        <h3 className="form-section__title">Contact Information</h3>
+
+        <div className="field-row">
+          <div className="field field-small">
+            <label htmlFor="country_code">
+              Country Code<span className="required-mark">*</span>
+            </label>
+            <input
+              id="country_code"
+              type="text"
+              value={values.country_code}
+              onChange={(e) => updateField("country_code", e.target.value)}
+              aria-invalid={Boolean(errors.country_code)}
+            />
+            {errors.country_code && <p className="field-error">{errors.country_code}</p>}
+          </div>
+
+          <div className="field field-grow field--account-linked">
+            <label htmlFor="mobile_number">
+              Mobile Number
+              <span className="badge badge-verified">Account linked</span>
+            </label>
+            <input
+              id="mobile_number"
+              type="tel"
+              value={values.mobile_number}
+              readOnly
+              disabled
+              aria-invalid={Boolean(errors.mobile_number)}
+              aria-describedby={errors.mobile_number ? "mobile_number-error" : "mobile_number-hint"}
+            />
+            <p className="field-hint" id="mobile_number-hint">
+              This is your registered account mobile number and can't be changed here.
+            </p>
+            {errors.mobile_number && (
+              <p className="field-error" id="mobile_number-error">
+                {errors.mobile_number}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3 className="form-section__title">Category / Eligibility</h3>
+
+        <div className="field">
+          <label htmlFor="category">
+            Category<span className="required-mark">*</span>
+          </label>
+          <select
+            id="category"
+            value={values.category}
+            onChange={(e) => updateField("category", e.target.value)}
+            aria-invalid={Boolean(errors.category)}
+            aria-describedby={errors.category ? "category-error" : undefined}
+          >
+            <option value="" disabled>
+              Select a category
+            </option>
+            {CATEGORY_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          {errors.category && (
+            <p className="field-error" id="category-error">
+              {errors.category}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="content-card__actions">
+        <button type="submit" disabled={isSubmitting || isLoadingExisting}>
+          {isSubmitting ? "Saving…" : "Continue"}
+        </button>
+      </div>
     </form>
   );
 }

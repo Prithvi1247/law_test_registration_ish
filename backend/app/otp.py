@@ -1,8 +1,9 @@
-
+# app/otp.py
 
 import os
 import random
 from datetime import datetime, timedelta, timezone
+import secrets
 
 OTP_LENGTH = 6
 OTP_TTL_SECONDS = 5 * 60  # 5 minutes
@@ -14,9 +15,8 @@ MAX_VERIFY_ATTEMPTS = 5
 # production response shape (SendOtpResponse.dev_otp is None otherwise).
 DEV_EXPOSE_OTP = os.getenv("DEV_EXPOSE_OTP", "false").lower() == "true"
 
-
 def generate_otp() -> str:
-    return "".join(str(random.randint(0, 9)) for _ in range(OTP_LENGTH))
+    return "".join(str(secrets.randbelow(10)) for _ in range(OTP_LENGTH))
 
 
 def otp_expiry() -> datetime:

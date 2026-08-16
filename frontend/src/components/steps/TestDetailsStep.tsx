@@ -6,6 +6,7 @@ import { deleteTestSelection } from "../../api/testSelection";
 import { ApiError, NetworkError } from "../../api/client";
 import { useOnboarding } from "../../state/OnboardingContext";
 import type { TestDate } from "../../types/onboarding";
+import "./steps.css";
 
 export function TestDetailsStep() {
   const navigate = useNavigate();
@@ -94,33 +95,48 @@ export function TestDetailsStep() {
   }
 
   return (
-    <div>
-      <h2>Test Date</h2>
-      <p>You may select one or both test dates.</p>
+    <div className="content-card">
+      <p className="content-card__eyebrow">Application · Step 3 of 6</p>
+      <h2 className="content-card__title">Test Date</h2>
+      <p className="content-card__description">
+        You may select one or both test dates. Selected dates are highlighted below.
+      </p>
 
       {isLoading && <p>Loading available test dates…</p>}
 
       {!isLoading && testDates.length === 0 && !error && <p>No test dates are currently available.</p>}
 
       {!isLoading && testDates.length > 0 && (
-        <fieldset className="field">
+        <fieldset className="field" style={{ marginBottom: "var(--space-6)" }}>
           <legend>Select test date(s)</legend>
-          <div className="radio-group" style={{ flexDirection: "column", alignItems: "flex-start" }}>
-            {testDates.map((td) => (
-              <label key={td.id}>
-                <input type="checkbox" checked={selected.has(td.id)} onChange={() => toggle(td.id)} />
-                {td.test_name} — {td.test_date}
-              </label>
-            ))}
+          <div className="test-date-options">
+            {testDates.map((td) => {
+              const isSelected = selected.has(td.id);
+              return (
+                <label
+                  key={td.id}
+                  className={`test-date-card${isSelected ? " is-selected" : ""}`}
+                >
+                  <input type="checkbox" checked={isSelected} onChange={() => toggle(td.id)} />
+                  <span className="test-date-card__body">
+                    <span className="test-date-card__name">{td.test_name}</span>
+                    <span className="test-date-card__date">{td.test_date} · Available</span>
+                  </span>
+                  <span className="test-date-card__check">✓</span>
+                </label>
+              );
+            })}
           </div>
         </fieldset>
       )}
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
-      <button type="button" onClick={handleContinue} disabled={isLoading || isSaving}>
-        {isSaving ? "Saving…" : "Continue"}
-      </button>
+      <div className="step-actions">
+        <button type="button" className="btn btn-primary" onClick={handleContinue} disabled={isLoading || isSaving}>
+          {isSaving ? "Saving…" : "Continue"}
+        </button>
+      </div>
     </div>
   );
 }

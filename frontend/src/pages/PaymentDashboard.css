@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Payment dashboard
+   ========================================================================== */
+
+.payment-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-1) var(--space-6);
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 560px) {
+  .payment-summary { grid-template-columns: 1fr; }
+}
+
+.amount-banner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  background: var(--color-ink-800);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.amount-banner__label {
+  font-size: var(--fs-sm);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.amount-banner__value {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  color: var(--color-brass-500);
+}
+
+.fee-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-2);
+}
+
+.fee-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.fee-table th,
+.fee-table td {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.fee-table thead th {
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-600);
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.fee-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid;
+}
+
+.status-pill--success {
+  background: var(--color-success-tint);
+  border-color: var(--color-success-border);
+  color: var(--color-success-700);
+}
+
+.status-pill--pending {
+  background: var(--color-warning-tint);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-700);
+}
+
+.status-pill--not-paid {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.payment-method-list {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.payment-method-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: border-color var(--duration-base) var(--ease-standard), background var(--duration-base) var(--ease-standard);
+}
+
+.payment-method-option:hover {
+  border-color: var(--color-ink-600);
+}
+
+.payment-method-option.is-selected {
+  border-color: var(--color-ink-800);
+  background: var(--color-brass-tint);
+}
+
+.payment-method-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-ink-800);
+}
+
+.payment-method-option__label {
+  font-weight: 600;
+  color: var(--color-ink-800);
+}

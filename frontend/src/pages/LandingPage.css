@@ -1,0 +1,178 @@
+/* ==========================================================================
+   Landing page
+   ========================================================================== */
+
+.hero {
+  background: linear-gradient(160deg, var(--color-ink-900) 0%, var(--color-ink-800) 65%, var(--color-ink-700) 100%);
+  border-radius: var(--radius-lg);
+  border-top: 3px solid var(--color-brass-600);
+  color: #fff;
+  padding: var(--space-9) var(--space-7);
+  margin-bottom: var(--space-8);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  /* A restrained seal motif in the corner — the one deliberate ornament */
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(176, 145, 63, 0.28);
+}
+
+.hero__eyebrow {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-brass-500);
+  margin-bottom: var(--space-3);
+}
+
+.hero h1 {
+  color: #fff;
+  font-size: 2.5rem;
+  max-width: 22ch;
+  margin-bottom: var(--space-4);
+}
+
+.hero p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--fs-md);
+  max-width: 52ch;
+  margin-bottom: var(--space-6);
+}
+
+.hero__actions {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.hero .btn-primary {
+  background: var(--color-brass-600);
+  border-color: var(--color-brass-600);
+  color: var(--color-ink-900);
+}
+
+.hero .btn-primary:hover:not(:disabled) {
+  background: var(--color-brass-500);
+  border-color: var(--color-brass-500);
+}
+
+.hero .btn-secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+.hero .btn-secondary:hover:not(:disabled) {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 640px) {
+  .hero { padding: var(--space-6) var(--space-5); }
+  .hero h1 { font-size: 1.75rem; }
+}
+
+/* ---- Info cards ---- */
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  margin-bottom: var(--space-8);
+}
+
+@media (max-width: 860px) {
+  .info-grid { grid-template-columns: 1fr; }
+}
+
+.info-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+.info-card__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-brass-tint);
+  border: 1px solid var(--color-brass-tint-border);
+  color: var(--color-brass-700);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-3);
+}
+
+.info-card h3 {
+  font-size: var(--fs-md);
+  margin-bottom: var(--space-2);
+}
+
+.info-card p {
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  margin-bottom: 0;
+}
+
+/* ---- Key dates strip ---- */
+
+.key-dates {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.key-dates h2 {
+  margin-bottom: var(--space-4);
+}
+
+.key-dates__list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-5);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+@media (max-width: 860px) {
+  .key-dates__list { grid-template-columns: 1fr; }
+}
+
+.key-dates__item {
+  border-left: 2px solid var(--color-brass-500);
+  padding-left: var(--space-3);
+}
+
+.key-dates__label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.key-dates__value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-ink-800);
+}

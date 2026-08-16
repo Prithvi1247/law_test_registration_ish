@@ -1,3 +1,4 @@
+# app/main.py
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from models.user import User
@@ -125,9 +126,20 @@ def login(
         raise HTTPException(status_code=401, detail="Invalid email/mobile or password")
 
     if not user.password_hash or not verify_password(login_data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email/mobile or password")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email/mobile or password"
+        )
+
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="Please verify your account with OTP before logging in."
+        )
 
     return user
+
+
 
 @app.post("/users/send-otp", response_model=SendOtpResponse)
 def send_otp(

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { sendOtp, verifyOtp } from "../api/otp";
 import { ApiError, NetworkError } from "../api/client";
 import { useOnboarding } from "../state/OnboardingContext";
+import { AppShell } from "../components/layout/AppShell";
+import "../components/AuthForm.css";
 
 export function VerifyOtpPage() {
   const navigate = useNavigate();
@@ -70,37 +72,60 @@ export function VerifyOtpPage() {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleVerify} noValidate>
-      <h2>Verify your account</h2>
-      <p>Enter the 6-digit code sent to your registered mobile number.</p>
+    <AppShell>
+      <div className="auth-shell">
+        <form className="auth-form" onSubmit={handleVerify} noValidate>
+          <h2>Verify your account</h2>
+          <p className="auth-form__description">
+            Enter the 6-digit code sent to your registered mobile number.
+          </p>
 
-      {devOtp && (
-        <p style={{ color: "#888" }}>
-          Development mode — OTP: <strong>{devOtp}</strong>
-        </p>
-      )}
+          {devOtp && (
+            <div className="alert alert-info">
+              <p style={{ margin: 0 }}>
+                Development mode — OTP: <strong>{devOtp}</strong>
+              </p>
+            </div>
+          )}
 
-      <div className="field">
-        <label htmlFor="otp">OTP</label>
-        <input
-          id="otp"
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
-          value={otp}
-          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-        />
+          <div className="field">
+            <label htmlFor="otp">6-digit code</label>
+            <input
+              id="otp"
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              autoComplete="one-time-code"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              style={{
+                textAlign: "center",
+                fontFamily: "var(--font-display)",
+                fontWeight: 600,
+                fontSize: "1.5rem",
+                letterSpacing: "0.6em",
+                paddingLeft: "0.9em", // visually re-centers the letter-spaced text
+              }}
+            />
+          </div>
+
+          {error && <p className="form-error" role="alert">{error}</p>}
+
+          <button type="submit" disabled={isVerifying || otp.length !== 6}>
+            {isVerifying ? "Verifying…" : "Verify"}
+          </button>
+
+          <div className="otp-resend" style={{ marginTop: "var(--space-4)" }}>
+            {cooldown > 0 ? (
+              <span>Resend code in {cooldown}s</span>
+            ) : (
+              <button type="button" onClick={handleSend} disabled={isSending}>
+                {isSending ? "Sending…" : "Resend OTP"}
+              </button>
+            )}
+          </div>
+        </form>
       </div>
-
-      {error && <p className="form-error">{error}</p>}
-
-      <button type="submit" disabled={isVerifying || otp.length !== 6}>
-        {isVerifying ? "Verifying…" : "Verify"}
-      </button>
-
-      <button type="button" onClick={handleSend} disabled={isSending || cooldown > 0} style={{ marginLeft: "0.5rem" }}>
-        {cooldown > 0 ? `Resend in ${cooldown}s` : isSending ? "Sending…" : "Resend OTP"}
-      </button>
-    </form>
+    </AppShell>
   );
 }

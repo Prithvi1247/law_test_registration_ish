@@ -1,9 +1,10 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { uploadDocument } from "../../api/documents";
 import { getApplicationReview } from "../../api/review";
 import { ApiError, NetworkError } from "../../api/client";
 import { useOnboarding } from "../../state/OnboardingContext";
+import "./steps.css";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
@@ -15,9 +16,13 @@ export function DocumentsStep() {
   const [existingPhotoName, setExistingPhotoName] = useState<string | null>(null);
   const [isLoadingExisting, setIsLoadingExisting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  // Visual-only preview URL for the currently chosen file — never sent to
+  // the backend, purely for the on-screen thumbnail.
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [justUploaded, setJustUploaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   useEffect(() => {
     if (applicantId === null) return;
@@ -33,10 +38,21 @@ export function DocumentsStep() {
       .finally(() => setIsLoadingExisting(false));
   }, [applicantId]);
 
-  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+  // Keep the object URL in sync with the selected file, and release the
+  // previous one so we don't leak memory across re-selections.
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  function applySelectedFile(selected: File | null) {
     setError(null);
     setJustUploaded(false);
-    const selected = e.target.files?.[0] ?? null;
     if (!selected) {
       setFile(null);
       return;
@@ -52,6 +68,19 @@ export function DocumentsStep() {
       return;
     }
     setFile(selected);
+  }
+
+  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    applySelectedFile(e.target.files?.[0] ?? null);
+  }
+
+  // Purely presentational drag/drop wrapper around the same input's
+  // behavior — dropping a file hands it to the identical validation path
+  // as picking one via the file dialog.
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragActive(false);
+    applySelectedFile(e.dataTransfer.files?.[0] ?? null);
   }
 
   async function handleUpload() {
@@ -85,31 +114,72 @@ export function DocumentsStep() {
   const canContinue = existingPhotoName !== null || justUploaded;
 
   return (
-    <div>
-      <h2>Photo / Documents</h2>
+    <div className="content-card">
+      <p className="content-card__eyebrow">Application · Step 5 of 6</p>
+      <h2 className="content-card__title">Photo / Documents</h2>
+      <p className="content-card__description">
+        Upload a recent passport-style photograph to complete your application.
+      </p>
 
       {isLoadingExisting && <p>Checking for an existing photo…</p>}
 
-      {!isLoadingExisting && existingPhotoName && !justUploaded && (
-        <p>
-          A photo is already on file ({existingPhotoName}). You can keep it and continue, or upload a new
-          one below to replace it.
-        </p>
+      {!isLoadingExisting && existingPhotoName && !justUploaded && !file && (
+        <div className="alert alert-info">
+          <p>
+            A photo is already on file (<strong>{existingPhotoName}</strong>). You can keep it and continue, or
+            choose a new one below to replace it.
+          </p>
+        </div>
       )}
 
-      <div className="field">
-        <label htmlFor="photo">{existingPhotoName ? "Replace Photo" : "Applicant Photo"} (JPG or PNG, under 2 MB)</label>
+      {file && previewUrl ? (
+        <div className="upload-preview">
+          <img src={previewUrl} alt="Selected upload preview" className="upload-preview__thumb" />
+          <div className="upload-preview__meta">
+            <div className="upload-preview__name">{file.name}</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--color-text-muted)" }}>
+              {(file.size / 1024).toFixed(0)} KB
+            </div>
+            {justUploaded && <div className="upload-preview__status">✓ Uploaded successfully</div>}
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className={`upload-area${file ? " has-file" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragActive(true);
+        }}
+        onDragLeave={() => setIsDragActive(false)}
+        onDrop={handleDrop}
+        style={isDragActive ? { borderColor: "var(--color-ink-600)" } : undefined}
+      >
+        <div className="upload-area__icon" aria-hidden="true">
+          ⬆
+        </div>
+        <div className="upload-area__label">
+          {existingPhotoName ? "Replace Photo" : "Applicant Photo"}
+        </div>
+        <p className="upload-area__hint">Drag and drop, or choose a file below · JPG or PNG, under 2 MB</p>
+        <label htmlFor="photo" style={{ position: "absolute", left: "-9999px" }}>
+          {existingPhotoName ? "Replace Photo" : "Applicant Photo"} (JPG or PNG, under 2 MB)
+        </label>
         <input id="photo" type="file" accept="image/jpeg,image/png" onChange={handleFileChange} />
       </div>
 
-      {error && <p className="form-error">{error}</p>}
-      {justUploaded && <p style={{ color: "#0a7a2f" }}>Photo uploaded successfully.</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
-      <div style={{ display: "flex", gap: "0.75rem" }}>
-        <button type="button" onClick={handleUpload} disabled={isUploading || !file}>
+      <div className="step-actions">
+        <button type="button" className="btn btn-secondary" onClick={handleUpload} disabled={isUploading || !file}>
           {isUploading ? "Uploading…" : existingPhotoName ? "Upload Replacement" : "Upload Photo"}
         </button>
-        <button type="button" onClick={() => navigate("/apply/review")} disabled={!canContinue}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate("/apply/review")}
+          disabled={!canContinue}
+        >
           Continue to Review
         </button>
       </div>

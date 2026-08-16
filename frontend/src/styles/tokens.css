@@ -1,0 +1,108 @@
+/* ==========================================================================
+   SLAT Admissions — Design Tokens
+   Palette: "Registry" — ink navy + brass seal accent, on cool paper gray.
+   Chosen to read as an official legal/academic register rather than a
+   generic SaaS product: navy evokes gazettes and statute covers, brass
+   is used only for seals/markers/focus — never as a decorative fill.
+   ========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* ---- Color: ink & paper ---- */
+  --color-ink-900: #0c1830;   /* deepest navy — header/footer */
+  --color-ink-800: #142440;   /* primary navy — headings, primary buttons */
+  --color-ink-700: #1e3358;   /* hover state of primary navy */
+  --color-ink-600: #34486e;   /* secondary text on navy */
+  --color-text: #1b2230;      /* body text */
+  --color-text-muted: #5d6472;
+  --color-text-faint: #8790a0;
+
+  --color-paper: #f1f2f4;     /* app background */
+  --color-surface: #ffffff;   /* card surface */
+  --color-surface-sunken: #f7f8fa; /* inset panels */
+
+  --color-border: #dadfe6;
+  --color-border-strong: #c3cad4;
+
+  /* ---- Color: brass seal accent (sparing use only) ---- */
+  --color-brass-700: #7d611f;
+  --color-brass-600: #9c7a32;
+  --color-brass-500: #b0913f;
+  --color-brass-tint: #fbf4e4;  /* light brass wash for selected states */
+  --color-brass-tint-border: #e9d9ae;
+
+  /* ---- Color: semantic ---- */
+  --color-success-700: #14532f;
+  --color-success-600: #1f7a4c;
+  --color-success-tint: #eaf6ee;
+  --color-success-border: #bfe3cd;
+
+  --color-danger-700: #7f1d16;
+  --color-danger-600: #b3261e;
+  --color-danger-tint: #fbebe9;
+  --color-danger-border: #f0c2bd;
+
+  --color-warning-700: #7a4b00;
+  --color-warning-600: #9a6700;
+  --color-warning-tint: #fdf3e0;
+  --color-warning-border: #f0d99b;
+
+  --color-focus-ring: #b0913f;
+
+  /* ---- Typography ---- */
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.625rem;
+  --fs-2xl: 2rem;
+
+  --lh-tight: 1.2;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.7;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+  --space-8: 3rem;
+  --space-9: 4rem;
+
+  /* ---- Radius ---- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* ---- Shadow ---- */
+  --shadow-sm: 0 1px 2px rgba(12, 24, 48, 0.06);
+  --shadow-md: 0 4px 16px rgba(12, 24, 48, 0.08), 0 1px 3px rgba(12, 24, 48, 0.06);
+  --shadow-lg: 0 12px 32px rgba(12, 24, 48, 0.12), 0 2px 6px rgba(12, 24, 48, 0.06);
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+
+  /* ---- Layout ---- */
+  --content-max-width: 760px;
+  --shell-max-width: 1120px;
+  --header-height: 64px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,454 @@
+/* ==========================================================================
+   SLAT Admissions — UI primitives
+   Reusable, composable classes shared by every page. Import once globally
+   (alongside tokens.css / base.css) — component CSS files layer on top.
+   ========================================================================== */
+
+/* ---- Content card (the single large card each step renders inside) ---- */
+
+.content-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-brass-600);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-7);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .content-card { padding: var(--space-5); }
+}
+
+.content-card__eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brass-700);
+  margin-bottom: var(--space-2);
+}
+
+.content-card__title {
+  margin-bottom: var(--space-1);
+}
+
+.content-card__description {
+  color: var(--color-text-muted);
+  font-size: var(--fs-base);
+  margin-bottom: var(--space-6);
+}
+
+/* A plain (non-elevated) sub-section used to group related fields inside a
+   content card, e.g. "Contact Information" within Personal Details. */
+.form-section {
+  margin-bottom: var(--space-6);
+}
+
+.form-section + .form-section {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.form-section__title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-600);
+  margin-bottom: var(--space-4);
+}
+
+/* ---- Buttons ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--fs-base);
+  line-height: 1;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard),
+    color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard);
+  text-decoration: none;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-primary {
+  background: var(--color-ink-800);
+  color: #fff;
+  border-color: var(--color-ink-800);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-ink-700);
+  border-color: var(--color-ink-700);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--color-ink-800);
+  border-color: var(--color-border-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-ink-800);
+  background: var(--color-surface-sunken);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: var(--fs-sm);
+}
+
+/* ---- Form controls ---- */
+
+.field {
+  margin-bottom: var(--space-5);
+}
+
+.field > label,
+.field > legend {
+  display: block;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  color: var(--color-ink-800);
+  margin-bottom: var(--space-2);
+}
+
+.field-hint {
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  margin: var(--space-1) 0 0;
+}
+
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="tel"],
+.field input[type="password"],
+.field input[type="date"],
+.field input[type="number"],
+.field select {
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--fs-base);
+  color: var(--color-text);
+  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 0.6875rem 0.875rem;
+  height: 2.75rem;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+
+.field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%235D6472' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  padding-right: 2.25rem;
+}
+
+.field input:hover:not(:disabled):not(:focus),
+.field select:hover:not(:disabled):not(:focus) {
+  border-color: var(--color-text-faint);
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--color-brass-600);
+  box-shadow: 0 0 0 3px var(--color-brass-tint);
+}
+
+.field input:disabled,
+.field select:disabled,
+.field input[readonly] {
+  background: var(--color-surface-sunken);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.field input[aria-invalid="true"],
+.field select[aria-invalid="true"] {
+  border-color: var(--color-danger-600);
+}
+
+.field input[aria-invalid="true"]:focus,
+.field select[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--color-danger-tint);
+}
+
+.field-error {
+  color: var(--color-danger-700);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  margin: var(--space-1) 0 0;
+}
+
+.field-row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.field-row .field {
+  margin-bottom: 0;
+}
+
+.field-small { flex: 0 0 130px; }
+.field-grow { flex: 1 1 auto; }
+
+@media (max-width: 560px) {
+  .field-row { flex-direction: column; gap: var(--space-5); }
+  .field-small { flex-basis: auto; }
+}
+
+.required-mark {
+  color: var(--color-danger-600);
+  margin-left: 0.15em;
+}
+
+/* ---- Radio / checkbox groups ---- */
+
+.radio-group {
+  display: flex;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.radio-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+  font-size: var(--fs-base);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.radio-group input[type="radio"],
+.radio-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-ink-800);
+  cursor: pointer;
+}
+
+fieldset.field {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-5);
+}
+
+/* ---- Alerts ---- */
+
+.alert {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  padding: var(--space-4);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--space-5);
+}
+
+.alert p:last-child { margin-bottom: 0; }
+
+.alert-error {
+  background: var(--color-danger-tint);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-700);
+}
+
+.alert-success {
+  background: var(--color-success-tint);
+  border-color: var(--color-success-border);
+  color: var(--color-success-700);
+}
+
+.alert-info {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.form-error {
+  color: var(--color-danger-700);
+  background: var(--color-danger-tint);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-sm);
+  margin: 0 0 var(--space-5);
+}
+
+/* ---- Badges ---- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid;
+}
+
+.badge-locked {
+  background: var(--color-success-tint);
+  border-color: var(--color-success-border);
+  color: var(--color-success-700);
+}
+
+.badge-draft {
+  background: var(--color-warning-tint);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-700);
+}
+
+.badge-verified {
+  background: var(--color-brass-tint);
+  border-color: var(--color-brass-tint-border);
+  color: var(--color-brass-700);
+}
+
+/* ---- Step indicator ("seal rail") ---- */
+/* Drop into ApplyLayout (or wherever the /apply route shell renders) above
+   the <Outlet />. Purely presentational — pass the active/completed step
+   index from existing route state; no routing logic here. */
+
+.step-rail {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  max-width: var(--content-max-width);
+  margin: 0 auto var(--space-7);
+  padding: 0 var(--space-2);
+}
+
+.step-rail__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  text-align: center;
+}
+
+.step-rail__item::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--color-border-strong);
+  z-index: 0;
+}
+
+.step-rail__item:first-child::before {
+  content: none;
+}
+
+.step-rail__item.is-completed::before {
+  background: var(--color-brass-600);
+}
+
+.step-rail__marker {
+  position: relative;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  background: #fff;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text-faint);
+}
+
+.step-rail__item.is-completed .step-rail__marker {
+  background: var(--color-ink-800);
+  border-color: var(--color-ink-800);
+  color: #fff;
+}
+
+.step-rail__item.is-current .step-rail__marker {
+  border-color: var(--color-brass-600);
+  color: var(--color-brass-700);
+  box-shadow: 0 0 0 3px var(--color-brass-tint);
+}
+
+.step-rail__label {
+  margin-top: var(--space-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--color-text-faint);
+}
+
+.step-rail__item.is-completed .step-rail__label,
+.step-rail__item.is-current .step-rail__label {
+  color: var(--color-ink-800);
+}
+
+/* Compact fallback for narrow screens: a labeled progress bar instead of
+   the full rail. Toggle via a wrapper class in the layout component. */
+.step-rail--compact {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .step-rail { display: none; }
+  .step-rail--compact {
+    display: block;
+    max-width: var(--content-max-width);
+    margin: 0 auto var(--space-6);
+  }
+  .step-rail--compact .step-rail__bar {
+    height: 4px;
+    background: var(--color-border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    margin-bottom: var(--space-2);
+  }
+  .step-rail--compact .step-rail__bar-fill {
+    height: 100%;
+    background: var(--color-brass-600);
+  }
+  .step-rail--compact .step-rail__meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+  }
+}

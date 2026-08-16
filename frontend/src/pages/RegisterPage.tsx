@@ -1,5 +1,10 @@
 import { RegisterForm } from "../components/RegisterForm";
+import { AppShell } from "../components/layout/AppShell";
 
 export function RegisterPage() {
-  return <RegisterForm />;
+  return (
+    <AppShell>
+      <RegisterForm />
+    </AppShell>
+  );
 }

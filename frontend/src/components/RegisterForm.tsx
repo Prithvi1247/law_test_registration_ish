@@ -57,66 +57,71 @@ export function RegisterForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <h2>Create your account</h2>
+    <div className="auth-shell">
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <h2>Create your account</h2>
+        <p className="auth-form__description">
+          Register to begin your SLAT admission application.
+        </p>
 
-      <div className="field">
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          value={values.email}
-          onChange={(e) => updateField("email", e.target.value)}
-          aria-invalid={Boolean(errors.email)}
-        />
-        {errors.email && <p className="field-error">{errors.email}</p>}
-      </div>
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            value={values.email}
+            onChange={(e) => updateField("email", e.target.value)}
+            aria-invalid={Boolean(errors.email)}
+          />
+          {errors.email && <p className="field-error">{errors.email}</p>}
+        </div>
 
-      <div className="field">
-        <label htmlFor="mobile_number">Mobile Number</label>
-        <input
-          id="mobile_number"
-          type="tel"
-          value={values.mobile_number}
-          onChange={(e) => updateField("mobile_number", e.target.value)}
-          aria-invalid={Boolean(errors.mobile_number)}
-        />
-        {errors.mobile_number && <p className="field-error">{errors.mobile_number}</p>}
-      </div>
+        <div className="field">
+          <label htmlFor="mobile_number">Mobile Number</label>
+          <input
+            id="mobile_number"
+            type="tel"
+            value={values.mobile_number}
+            onChange={(e) => updateField("mobile_number", e.target.value)}
+            aria-invalid={Boolean(errors.mobile_number)}
+          />
+          {errors.mobile_number && <p className="field-error">{errors.mobile_number}</p>}
+        </div>
 
-      <div className="field">
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          value={values.password}
-          onChange={(e) => updateField("password", e.target.value)}
-          aria-invalid={Boolean(errors.password)}
-        />
-        {errors.password && <p className="field-error">{errors.password}</p>}
-      </div>
+        <div className="field">
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            value={values.password}
+            onChange={(e) => updateField("password", e.target.value)}
+            aria-invalid={Boolean(errors.password)}
+          />
+          {errors.password && <p className="field-error">{errors.password}</p>}
+        </div>
 
-      <div className="field">
-        <label htmlFor="confirm_password">Confirm Password</label>
-        <input
-          id="confirm_password"
-          type="password"
-          value={values.confirm_password}
-          onChange={(e) => updateField("confirm_password", e.target.value)}
-          aria-invalid={Boolean(errors.confirm_password)}
-        />
-        {errors.confirm_password && <p className="field-error">{errors.confirm_password}</p>}
-      </div>
+        <div className="field">
+          <label htmlFor="confirm_password">Confirm Password</label>
+          <input
+            id="confirm_password"
+            type="password"
+            value={values.confirm_password}
+            onChange={(e) => updateField("confirm_password", e.target.value)}
+            aria-invalid={Boolean(errors.confirm_password)}
+          />
+          {errors.confirm_password && <p className="field-error">{errors.confirm_password}</p>}
+        </div>
 
-      {submitError && <p className="form-error">{submitError}</p>}
+        {submitError && <p className="form-error" role="alert">{submitError}</p>}
 
-      <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Creating account…" : "Register"}
-      </button>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Creating account…" : "Register"}
+        </button>
 
-      <p className="auth-switch">
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
-    </form>
+        <p className="auth-switch">
+          Already have an account? <Link to="/login">Log in</Link>
+        </p>
+      </form>
+    </div>
   );
 }

@@ -18,59 +18,65 @@ import { VerifyOtpPage } from "./pages/VerifyOtpPage";
 export function App() {
   return (
     <OnboardingProvider>
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "2rem 1rem" }}>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login" element={<LoginPage />} />
+      {/*
+        The old wrapper here hardcoded maxWidth:640/padding inline, which
+        capped every page — including the full-width header and wide
+        content cards the new design system uses — at a phone-sized
+        column. Each page/layout (LandingPage, ApplyLayout, auth pages)
+        now owns its own width via .app-shell / .content-card / .auth-shell,
+        so no global wrapper is needed here. Routing is unchanged.
+      */}
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
 
-          <Route
-            path="/verify-otp"
-            element={
-              <ProtectedRoute requireVerified={false}>
-                <VerifyOtpPage />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/verify-otp"
+          element={
+            <ProtectedRoute requireVerified={false}>
+              <VerifyOtpPage />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/apply"
-            element={
-              <ProtectedRoute>
-                <ApplyLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="personal" replace />} />
-            <Route path="personal" element={<PersonalDetailsForm />} />
-            <Route path="education" element={<EducationStep />} />
-            <Route path="test" element={<TestDetailsStep />} />
-            <Route path="preferences" element={<CityPreferencesStep />} />
-            <Route path="documents" element={<DocumentsStep />} />
-            <Route path="review" element={<ReviewStep />} />
-          </Route>
+        <Route
+          path="/apply"
+          element={
+            <ProtectedRoute>
+              <ApplyLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="personal" replace />} />
+          <Route path="personal" element={<PersonalDetailsForm />} />
+          <Route path="education" element={<EducationStep />} />
+          <Route path="test" element={<TestDetailsStep />} />
+          <Route path="preferences" element={<CityPreferencesStep />} />
+          <Route path="documents" element={<DocumentsStep />} />
+          <Route path="review" element={<ReviewStep />} />
+        </Route>
 
-          <Route
-            path="/payment"
-            element={
-              <ProtectedRoute>
-                <PaymentDashboard />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/payment"
+          element={
+            <ProtectedRoute>
+              <PaymentDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </OnboardingProvider>
   );
 }

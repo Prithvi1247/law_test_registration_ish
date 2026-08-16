@@ -1,11 +1,12 @@
 import { Outlet, useLocation } from "react-router-dom";
+import { AppShell } from "../components/layout/AppShell";
 
 const APPLY_STEPS = [
-  { path: "personal", label: "Personal Details" },
+  { path: "personal", label: "Personal" },
   { path: "education", label: "Education" },
-  { path: "test", label: "Test Date" },
-  { path: "preferences", label: "Test Centre Preferences" },
-  { path: "documents", label: "Photo / Documents" },
+  { path: "test", label: "Test" },
+  { path: "preferences", label: "Preferences" },
+  { path: "documents", label: "Documents" },
   { path: "review", label: "Review" },
 ] as const;
 
@@ -15,25 +16,38 @@ export function ApplyLayout() {
   const currentIndex = APPLY_STEPS.findIndex((s) => s.path === currentPath);
 
   return (
-    <div>
-      <nav aria-label="Application progress" style={{ marginBottom: "1.5rem" }}>
-        <ol style={{ display: "flex", gap: "0.5rem", listStyle: "none", padding: 0, flexWrap: "wrap" }}>
-          {APPLY_STEPS.map((step, index) => (
-            <li
-              key={step.path}
-              style={{
-                fontSize: "0.85rem",
-                color: index === currentIndex ? "#1a1a1a" : "#888",
-                fontWeight: index === currentIndex ? 600 : 400,
-              }}
-            >
-              {index + 1}. {step.label}
-              {index < APPLY_STEPS.length - 1 && <span style={{ margin: "0 0.5rem" }}>→</span>}
-            </li>
-          ))}
-        </ol>
+    <AppShell>
+      <nav aria-label="Application progress" className="step-rail">
+        {APPLY_STEPS.map((step, index) => {
+          const status = index < currentIndex ? "is-completed" : index === currentIndex ? "is-current" : "";
+          return (
+            <div key={step.path} className={`step-rail__item ${status}`}>
+              <span className="step-rail__marker" aria-hidden="true">
+                {index < currentIndex ? "✓" : index + 1}
+              </span>
+              <span className="step-rail__label">{step.label}</span>
+            </div>
+          );
+        })}
       </nav>
+
+      {/* Compact fallback shown under 640px via CSS (see .step-rail--compact) */}
+      <div className="step-rail--compact" role="status" aria-live="polite">
+        <div className="step-rail__bar">
+          <div
+            className="step-rail__bar-fill"
+            style={{ width: `${((currentIndex + 1) / APPLY_STEPS.length) * 100}%` }}
+          />
+        </div>
+        <div className="step-rail__meta">
+          <span>
+            Step {currentIndex + 1} of {APPLY_STEPS.length}
+          </span>
+          <span>{APPLY_STEPS[currentIndex]?.label}</span>
+        </div>
+      </div>
+
       <Outlet />
-    </div>
+    </AppShell>
   );
 }

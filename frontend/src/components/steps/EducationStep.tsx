@@ -4,6 +4,7 @@ import { saveEducation } from "../../api/education";
 import { getApplicationReview } from "../../api/review";
 import { ApiError, NetworkError } from "../../api/client";
 import { useOnboarding } from "../../state/OnboardingContext";
+import "./steps.css";
 
 export function EducationStep() {
   const navigate = useNavigate();
@@ -62,25 +63,36 @@ export function EducationStep() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
-      <h2>Education</h2>
+    <form className="content-card" onSubmit={handleSubmit} noValidate>
+      <p className="content-card__eyebrow">Application · Step 2 of 6</p>
+      <h2 className="content-card__title">Education</h2>
+      <p className="content-card__description">
+        Tell us about your current or most recently completed academic qualification.
+      </p>
 
-      <div className="field">
-        <label htmlFor="educational_background">Educational Background</label>
-        <input
-          id="educational_background"
-          type="text"
-          placeholder="e.g. 12th Standard - CBSE"
-          value={educationalBackground}
-          onChange={(e) => setEducationalBackground(e.target.value)}
-        />
+      <div className="form-section">
+        <div className="field">
+          <label htmlFor="educational_background">
+            Educational Background<span className="required-mark">*</span>
+          </label>
+          <input
+            id="educational_background"
+            type="text"
+            placeholder="e.g. 12th Standard - CBSE"
+            value={educationalBackground}
+            onChange={(e) => setEducationalBackground(e.target.value)}
+          />
+          <p className="field-hint">Include the board or university and year of completion, if applicable.</p>
+        </div>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
 
-      <button type="submit" disabled={isSubmitting || isLoadingExisting}>
-        {isSubmitting ? "Saving…" : "Continue"}
-      </button>
+      <div className="step-actions">
+        <button type="submit" className="btn btn-primary" disabled={isSubmitting || isLoadingExisting}>
+          {isSubmitting ? "Saving…" : "Continue"}
+        </button>
+      </div>
     </form>
   );
 }

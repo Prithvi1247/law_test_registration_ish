@@ -84,42 +84,47 @@ export function LoginForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <h2>Log in</h2>
+    <div className="auth-shell">
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <h2>Log in</h2>
+        <p className="auth-form__description">
+          Access your SLAT application using your registered email or mobile number.
+        </p>
 
-      <div className="field">
-        <label htmlFor="identifier">Email or Mobile Number</label>
-        <input
-          id="identifier"
-          type="text"
-          value={values.identifier}
-          onChange={(e) => updateField("identifier", e.target.value)}
-          aria-invalid={Boolean(errors.identifier)}
-        />
-        {errors.identifier && <p className="field-error">{errors.identifier}</p>}
-      </div>
+        <div className="field">
+          <label htmlFor="identifier">Email or Mobile Number</label>
+          <input
+            id="identifier"
+            type="text"
+            value={values.identifier}
+            onChange={(e) => updateField("identifier", e.target.value)}
+            aria-invalid={Boolean(errors.identifier)}
+          />
+          {errors.identifier && <p className="field-error">{errors.identifier}</p>}
+        </div>
 
-      <div className="field">
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          value={values.password}
-          onChange={(e) => updateField("password", e.target.value)}
-          aria-invalid={Boolean(errors.password)}
-        />
-        {errors.password && <p className="field-error">{errors.password}</p>}
-      </div>
+        <div className="field">
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            value={values.password}
+            onChange={(e) => updateField("password", e.target.value)}
+            aria-invalid={Boolean(errors.password)}
+          />
+          {errors.password && <p className="field-error">{errors.password}</p>}
+        </div>
 
-      {submitError && <p className="form-error">{submitError}</p>}
+        {submitError && <p className="form-error" role="alert">{submitError}</p>}
 
-      <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Logging in…" : "Log in"}
-      </button>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Logging in…" : "Log in"}
+        </button>
 
-      <p className="auth-switch">
-        New here? <Link to="/register">Create an account</Link>
-      </p>
-    </form>
+        <p className="auth-switch">
+          New here? <Link to="/register">Create an account</Link>
+        </p>
+      </form>
+    </div>
   );
 }

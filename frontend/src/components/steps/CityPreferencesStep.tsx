@@ -8,6 +8,7 @@ import { ApiError, NetworkError } from "../../api/client";
 import { useOnboarding } from "../../state/OnboardingContext";
 import { validateTestSelection } from "../../validation/testSelection";
 import type { TestCentre, TestDate } from "../../types/onboarding";
+import "./steps.css";
 
 const RANKS = [1, 2, 3] as const;
 
@@ -169,61 +170,67 @@ export function CityPreferencesStep() {
     }
   }
 
-  if (isLoading) return <p>Loading test centres…</p>;
-  if (loadError) return <p className="form-error">{loadError}</p>;
+  if (isLoading) return <div className="content-card"><p>Loading test centres…</p></div>;
+  if (loadError) return <div className="content-card"><p className="form-error" role="alert">{loadError}</p></div>;
   if (testDateIds.length === 0) {
-    return <p className="form-error">Please select a test date first.</p>;
+    return <div className="content-card"><p className="form-error" role="alert">Please select a test date first.</p></div>;
   }
 
   return (
-    <div>
-      <h2>Test Centre Preferences</h2>
-      <p>Choose up to three preferred cities, ranked in order, for each selected test date.</p>
+    <div className="content-card">
+      <p className="content-card__eyebrow">Application · Step 4 of 6</p>
+      <h2 className="content-card__title">Test Centre Preferences</h2>
+      <p className="content-card__description">
+        Choose up to three preferred cities, ranked in order, for each selected test date.
+      </p>
 
       {testDateIds.map((dateId) => {
         const testDate = testDates.find((td) => td.id === dateId);
         const form = formByDate[dateId] ?? { stateByRank: {}, centreByRank: {} };
 
         return (
-          <section key={dateId} style={{ marginBottom: "2rem" }}>
+          <section key={dateId} className="preference-set">
             <h3>{testDate ? `${testDate.test_name} — ${testDate.test_date}` : `Test date ${dateId}`}</h3>
 
             {RANKS.map((rank) => {
               const state = form.stateByRank[rank];
               const cities = citiesForState(state);
               return (
-                <div key={rank} className="field-row" style={{ marginBottom: "1rem" }}>
-                  <div className="field field-grow">
-                    <label htmlFor={`state-${dateId}-${rank}`}>Preference {rank} — State</label>
-                    <select
-                      id={`state-${dateId}-${rank}`}
-                      value={state ?? ""}
-                      onChange={(e) => updateRank(dateId, rank, "state", e.target.value)}
-                    >
-                      <option value="">{rank === 1 ? "Select a state" : "Select a state (optional)"}</option>
-                      {states.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div key={rank} className="preference-row">
+                  <span className="preference-row__rank">{rank}</span>
+                  <div className="preference-row__fields">
+                    <div className="field field-grow">
+                      <label htmlFor={`state-${dateId}-${rank}`}>Preference {rank} — State</label>
+                      <select
+                        id={`state-${dateId}-${rank}`}
+                        value={state ?? ""}
+                        onChange={(e) => updateRank(dateId, rank, "state", e.target.value)}
+                      >
+                        <option value="">{rank === 1 ? "Select a state" : "Select a state (optional)"}</option>
+                        {states.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="field field-grow">
-                    <label htmlFor={`city-${dateId}-${rank}`}>Preference {rank} — City</label>
-                    <select
-                      id={`city-${dateId}-${rank}`}
-                      value={form.centreByRank[rank] ?? ""}
-                      disabled={!state}
-                      onChange={(e) => updateRank(dateId, rank, "centre", Number(e.target.value))}
-                    >
-                      <option value="">Select a city</option>
-                      {cities.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.city}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="field field-grow">
+                      <label htmlFor={`city-${dateId}-${rank}`}>Preference {rank} — City</label>
+                      <select
+                        id={`city-${dateId}-${rank}`}
+                        value={form.centreByRank[rank] ?? ""}
+                        disabled={!state}
+                        onChange={(e) => updateRank(dateId, rank, "centre", Number(e.target.value))}
+                      >
+                        <option value="">Select a city</option>
+                        {cities.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.city}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               );
@@ -232,11 +239,13 @@ export function CityPreferencesStep() {
         );
       })}
 
-      {formError && <p className="form-error">{formError}</p>}
+      {formError && <p className="form-error" role="alert">{formError}</p>}
 
-      <button type="button" onClick={handleSubmit} disabled={isSubmitting}>
-        {isSubmitting ? "Saving…" : "Continue"}
-      </button>
+      <div className="step-actions">
+        <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? "Saving…" : "Continue"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { getApplicationReview } from "../api/review";
 import { ApiError, NetworkError } from "../api/client";
 import { useOnboarding } from "../state/OnboardingContext";
 import type { ApplicationReview } from "../types/onboarding";
+import { AppShell } from "../components/layout/AppShell";
 
 /**
  * BACKEND GAP #1: there is no endpoint to look up an applicant by userId.
@@ -36,54 +37,71 @@ export function DashboardPage() {
 
   if (applicantId === null) {
     return (
-      <div>
-        <h2>Applicant Dashboard</h2>
-        <p>
-          We don't have an application on file for this session yet. If you already started an
-          application earlier, this is a known limitation (the backend doesn't yet support looking up
-          an application by account) — please continue from where you left off in the same session, or{" "}
-          <Link to="/apply/personal">start a new application</Link>.
-        </p>
-      </div>
+      <AppShell>
+        <div className="content-card">
+          <h2 className="content-card__title">Applicant Dashboard</h2>
+          <div className="alert alert-info">
+            <p style={{ margin: 0 }}>
+              We don't have an application on file for this session yet. If you already started an
+              application earlier, this is a known limitation (the backend doesn't yet support looking up
+              an application by account) — please continue from where you left off in the same session, or{" "}
+              <Link to="/apply/personal">start a new application</Link>.
+            </p>
+          </div>
+        </div>
+      </AppShell>
     );
   }
 
-  if (isLoading) return <p>Loading your application…</p>;
-  if (error) return <p className="form-error">{error}</p>;
+  if (isLoading) return <AppShell><div className="content-card"><p>Loading your application…</p></div></AppShell>;
+  if (error) return <AppShell><div className="content-card"><p className="form-error" role="alert">{error}</p></div></AppShell>;
   if (!review) return null;
 
   return (
-    <div>
-      <h2>Applicant Dashboard</h2>
-      <p>
-        <strong>Status:</strong> Draft
-        <br />
-        <span style={{ fontSize: "0.85rem", color: "#888" }}>
-          (The backend does not yet support a submitted/final status — this will always read "Draft"
-          until that endpoint exists.)
-        </span>
-      </p>
-      <p>
-        <strong>Name:</strong> {review.personal.full_name}
-      </p>
-      <p>
-        <strong>Education:</strong> {review.education?.educational_background ?? "Not saved yet"}
-      </p>
-      <p>
-        <strong>Test Dates:</strong>{" "}
-        {review.test_dates.length > 0 ? review.test_dates.map((td) => td.test_name).join(", ") : "Not selected yet"}
-      </p>
-      <p>
-        <strong>Preferences:</strong>{" "}
-        {review.test_dates.some((td) => td.city_preferences.length > 0)
-          ? review.test_dates
-              .map((td) => `${td.test_name}: ${td.city_preferences.map((p) => p.city).join(", ")}`)
-              .join(" | ")
-          : "None saved yet"}
-      </p>
-      <p>
-        <strong>Documents:</strong> {review.documents.length > 0 ? `${review.documents.length} uploaded` : "None uploaded yet"}
-      </p>
-    </div>
+    <AppShell>
+      <div className="content-card">
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--space-3)" }}>
+          <h2 className="content-card__title">Applicant Dashboard</h2>
+          <span className="badge badge-draft">Draft</span>
+        </div>
+        <p className="field-hint" style={{ marginTop: 0, marginBottom: "var(--space-6)" }}>
+          The backend does not yet support a submitted/final status — this will always read "Draft"
+          until that endpoint exists.
+        </p>
+
+        <dl>
+          <div className="review-row">
+            <dt>Name</dt>
+            <dd>{review.personal.full_name}</dd>
+          </div>
+          <div className="review-row">
+            <dt>Education</dt>
+            <dd>{review.education?.educational_background ?? "Not saved yet"}</dd>
+          </div>
+          <div className="review-row">
+            <dt>Test Dates</dt>
+            <dd>
+              {review.test_dates.length > 0
+                ? review.test_dates.map((td) => td.test_name).join(", ")
+                : "Not selected yet"}
+            </dd>
+          </div>
+          <div className="review-row">
+            <dt>Preferences</dt>
+            <dd>
+              {review.test_dates.some((td) => td.city_preferences.length > 0)
+                ? review.test_dates
+                    .map((td) => `${td.test_name}: ${td.city_preferences.map((p) => p.city).join(", ")}`)
+                    .join(" | ")
+                : "None saved yet"}
+            </dd>
+          </div>
+          <div className="review-row">
+            <dt>Documents</dt>
+            <dd>{review.documents.length > 0 ? `${review.documents.length} uploaded` : "None uploaded yet"}</dd>
+          </div>
+        </dl>
+      </div>
+    </AppShell>
   );
 }
