@@ -187,3 +187,38 @@ export interface LoginRequest {
   identifier: string;
   password: string;
 }
+
+export type PaymentMethod = "BILLDESK" | "EASEBUZZ" | "DEMAND_DRAFT";
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";
+
+export interface PaymentTestDateLine {
+  test_date_id: number;
+  test_name: string;
+  test_date: string;
+  charges: number;
+}
+
+export interface Payment {
+  id: number;
+  applicant_id: number;
+  amount: number;
+  payment_method: PaymentMethod | null;
+  payment_status: PaymentStatus;
+  reference_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentDashboard {
+  applicant_id: number;
+  registration_id: string | null;
+  full_name: string;
+  email: string;
+  category: string;
+  date_of_birth: string;
+  test_dates: PaymentTestDateLine[];
+  programme_registration_fee: number;
+  amount_payable: number;
+  available_payment_methods: PaymentMethod[];
+  payment: Payment | null;
+}

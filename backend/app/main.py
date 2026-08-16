@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Depends
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 from models.user import User
 from schemas.user import UserResponse, UserCreate, UserLogin
@@ -36,8 +35,13 @@ from models.document import ApplicantDocument
 from schemas.review import ReviewResponse
 from app.security import hash_password
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from app.security import verify_password
 from fastapi import HTTPException
+
+from models.payment import Payment
+from schemas.payment import PaymentInitiate, PaymentResponse, PaymentDashboardResponse, PaymentTestDateLine
+from app.fees import TEST_FEE_INR, PROGRAMME_REGISTRATION_FEE_INR, calculate_amount_payable
 
 app = FastAPI(title="SLAT Registration API")
 
@@ -57,34 +61,51 @@ def root():
     return {"message": "SLAT Registration API is running"}
 
 
-@app.get("/db-test")
-def db_test(db: Session = Depends(get_db)):
-    result = db.execute(text("SELECT 1")).scalar()
-
-    return {
-        "database": result
-    }
-
-@app.get("/users", response_model = list[UserResponse])
-def get_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
-
-    return users
-
-@app.post("/users", response_model = UserResponse)
+@app.post("/users", response_model=UserResponse)
 def create_user(
     user_data: UserCreate,
     db: Session = Depends(get_db)
 ):
+    # Give the frontend a useful 409 instead of allowing a PostgreSQL
+    # UNIQUE violation to become a 500 response.
+    if db.query(User).filter(User.email == user_data.email).first():
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this email already exists. Please log in instead."
+        )
+
+    if db.query(User).filter(User.mobile_number == user_data.mobile_number).first():
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this mobile number already exists. Please log in instead."
+        )
+
     user = User(
         email=user_data.email,
         mobile_number=user_data.mobile_number,
         password_hash=hash_password(user_data.password)
     )
 
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    except IntegrityError as exc:
+        db.rollback()
+
+        # The pre-checks above handle normal duplicate registration.
+        # This catches a race condition where another request inserts the
+        # same unique value between the check and the commit.
+        constraint = str(getattr(exc.orig, "diag", None) and exc.orig.diag.constraint_name or "")
+
+        if constraint == "users_email_key":
+            detail = "An account with this email already exists. Please log in instead."
+        elif constraint == "users_mobile_number_key":
+            detail = "An account with this mobile number already exists. Please log in instead."
+        else:
+            detail = "An account with this email or mobile number already exists."
+
+        raise HTTPException(status_code=409, detail=detail)
 
     return user
 
@@ -122,6 +143,18 @@ def create_applicant(
     applicant_data: ApplicantCreate,
     db: Session = Depends(get_db)
 ):
+    # Applicant.user_id is a 1:1 relationship. Never create a second
+    # application for the same user.
+    existing_applicant = db.query(Applicant).filter(
+        Applicant.user_id == applicant_data.user_id
+    ).first()
+
+    if existing_applicant:
+        raise HTTPException(
+            status_code=409,
+            detail="An application already exists for this user."
+        )
+
     applicant = Applicant(
         user_id=applicant_data.user_id,
         full_name=applicant_data.full_name,
@@ -582,3 +615,196 @@ def get_application_review(
         "test_dates": test_dates_out,
         "documents": documents
     }
+
+@app.post(
+    "/applicants/{applicant_id}/submit",
+    response_model=ApplicantResponse
+)
+def submit_application(
+    applicant_id: int,
+    db: Session = Depends(get_db)
+):
+    applicant = db.query(Applicant).filter(
+        Applicant.id == applicant_id
+    ).first()
+
+    if not applicant:
+        raise HTTPException(
+            status_code=404,
+            detail="Applicant not found"
+        )
+
+    ensure_draft(applicant)
+
+    missing = []
+
+    education = db.query(ApplicantEducation).filter(
+        ApplicantEducation.applicant_id == applicant_id
+    ).first()
+    if not education:
+        missing.append("Education")
+
+    test_selections = db.query(ApplicantTestSelection).filter(
+        ApplicantTestSelection.applicant_id == applicant_id
+    ).all()
+    if not test_selections:
+        missing.append("At least one test date")
+
+    for selection in test_selections:
+        preference_count = db.query(ApplicantCityPreference).filter(
+            ApplicantCityPreference.applicant_id == applicant_id,
+            ApplicantCityPreference.test_date_id == selection.test_date_id
+        ).count()
+
+        if preference_count == 0:
+            test_date = db.query(TestDate).filter(
+                TestDate.id == selection.test_date_id
+            ).first()
+            label = test_date.test_name if test_date else f"Test date {selection.test_date_id}"
+            missing.append(f"Test centre preferences for {label}")
+
+    photo = db.query(ApplicantDocument).filter(
+        ApplicantDocument.applicant_id == applicant_id,
+        ApplicantDocument.document_type == "PHOTO"
+    ).first()
+    if not photo:
+        missing.append("Photo")
+
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Application is incomplete.",
+                "missing": missing
+            }
+        )
+
+    applicant.status = "submitted"
+
+    try:
+        db.commit()
+        db.refresh(applicant)
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Application submission failed. Please try again."
+        )
+
+    return applicant
+
+
+@app.get(
+    "/applicants/{applicant_id}/payment",
+    response_model=PaymentDashboardResponse
+)
+def get_payment_dashboard(
+    applicant_id: int,
+    db: Session = Depends(get_db)
+):
+    applicant = db.query(Applicant).filter(
+        Applicant.id == applicant_id
+    ).first()
+
+    if not applicant:
+        raise HTTPException(status_code=404, detail="Applicant not found")
+
+    if applicant.status != "submitted":
+        raise HTTPException(
+            status_code=409,
+            detail="Payment is available only after the application is submitted."
+        )
+
+    user = db.query(User).filter(User.id == applicant.user_id).first()
+
+    test_selections = db.query(ApplicantTestSelection).filter(
+        ApplicantTestSelection.applicant_id == applicant_id
+    ).all()
+
+    test_date_lines = []
+    for selection in test_selections:
+        test_date = db.query(TestDate).filter(TestDate.id == selection.test_date_id).first()
+        if test_date:
+            test_date_lines.append(PaymentTestDateLine(
+                test_date_id=test_date.id,
+                test_name=test_date.test_name,
+                test_date=test_date.test_date,
+                charges=TEST_FEE_INR
+            ))
+
+    amount_payable = calculate_amount_payable(len(test_date_lines))
+
+    payment = db.query(Payment).filter(
+        Payment.applicant_id == applicant_id
+    ).order_by(Payment.created_at.desc()).first()
+
+    return PaymentDashboardResponse(
+        applicant_id=applicant.id,
+        registration_id=applicant.registration_id,
+        full_name=applicant.full_name,
+        email=user.email if user else "",
+        category=applicant.category,
+        date_of_birth=applicant.date_of_birth,
+        test_dates=test_date_lines,
+        programme_registration_fee=PROGRAMME_REGISTRATION_FEE_INR,
+        amount_payable=amount_payable,
+        available_payment_methods=["BILLDESK", "EASEBUZZ", "DEMAND_DRAFT"],
+        payment=payment
+    )
+
+
+@app.post(
+    "/applicants/{applicant_id}/payment",
+    response_model=PaymentResponse
+)
+def initiate_payment(
+    applicant_id: int,
+    payment_data: PaymentInitiate,
+    db: Session = Depends(get_db)
+):
+    applicant = db.query(Applicant).filter(
+        Applicant.id == applicant_id
+    ).first()
+
+    if not applicant:
+        raise HTTPException(status_code=404, detail="Applicant not found")
+
+    if applicant.status != "submitted":
+        raise HTTPException(
+            status_code=409,
+            detail="Payment can only be started for a submitted application."
+        )
+
+    valid_methods = {"BILLDESK", "EASEBUZZ", "DEMAND_DRAFT"}
+    if payment_data.payment_method not in valid_methods:
+        raise HTTPException(
+            status_code=400,
+            detail=f"payment_method must be one of {sorted(valid_methods)}"
+        )
+
+    test_selections = db.query(ApplicantTestSelection).filter(
+        ApplicantTestSelection.applicant_id == applicant_id
+    ).all()
+    amount = calculate_amount_payable(len(test_selections))
+
+    payment = db.query(Payment).filter(
+        Payment.applicant_id == applicant_id,
+        Payment.payment_status == "PENDING"
+    ).first()
+
+    if payment:
+        payment.payment_method = payment_data.payment_method
+        payment.amount = amount
+    else:
+        payment = Payment(
+            applicant_id=applicant_id,
+            amount=amount,
+            payment_method=payment_data.payment_method,
+            payment_status="PENDING"
+        )
+        db.add(payment)
+
+    db.commit()
+    db.refresh(payment)
+
+    return payment

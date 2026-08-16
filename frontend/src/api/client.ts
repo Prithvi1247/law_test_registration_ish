@@ -59,10 +59,23 @@ export async function apiRequest<TResponse>(
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      method,
-      headers: isFormData ? undefined : { "Content-Type": "application/json" },
-      body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
-    });
+        method,
+        headers: isFormData ? undefined : { "Content-Type": "application/json" },
+        // Guard against double-encoding: if a caller already passed a
+        // JSON string (e.g. someone mistakenly did JSON.stringify(payload)
+        // before calling apiRequest), don't stringify it again — that
+        // would send Pydantic a quoted string instead of an object,
+        // producing "Input should be a valid dictionary or object to
+        // extract fields from". Objects are stringified exactly once,
+        // here, and nowhere else.
+        body: isFormData
+          ? (body as FormData)
+          : body === undefined
+          ? undefined
+          : typeof body === "string"
+          ? body
+          : JSON.stringify(body),
+      });
   } catch {
     // fetch throws only on network-level failures (offline, DNS, CORS, etc.)
     throw new NetworkError();

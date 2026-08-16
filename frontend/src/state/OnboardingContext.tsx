@@ -3,9 +3,11 @@ import type { OnboardingState } from "../types/onboarding";
 
 interface OnboardingContextValue extends OnboardingState {
   testDateIds: number[];
+  isSubmitted: boolean;
   setUserId: (id: number) => void;
   setApplicantId: (id: number) => void;
   setTestDateIds: (ids: number[]) => void;
+  setIsSubmitted: (value: boolean) => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextValue | undefined>(undefined);
@@ -22,6 +24,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [userId, setUserIdState] = useState<number | null>(null);
   const [applicantId, setApplicantIdState] = useState<number | null>(null);
   const [testDateIds, setTestDateIdsState] = useState<number[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const value = useMemo<OnboardingContextValue>(
     () => ({
@@ -31,8 +34,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       setUserId: setUserIdState,
       setApplicantId: setApplicantIdState,
       setTestDateIds: setTestDateIdsState,
+      isSubmitted,
+      setIsSubmitted,
     }),
-    [userId, applicantId, testDateIds]
+    [userId, applicantId, testDateIds, isSubmitted]
   );
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;

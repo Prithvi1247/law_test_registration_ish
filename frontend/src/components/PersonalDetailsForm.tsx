@@ -79,9 +79,7 @@ export function PersonalDetailsForm() {
     setIsSubmitting(true);
     try {
       if (applicantId !== null) {
-        // Already have an applicant — this is an edit, PATCH it.
-        // Never call createApplicant again here.
-        await updateApplicant(applicantId, {
+        const applicant = await updateApplicant(applicantId, {
           full_name: values.full_name.trim(),
           date_of_birth: values.date_of_birth,
           country_code: values.country_code.trim(),
@@ -90,6 +88,8 @@ export function PersonalDetailsForm() {
           is_nri: values.is_nri as boolean,
           nationality: values.nationality.trim(),
         });
+
+        setApplicantId(applicant.id);
         navigate("/apply/education");
         return;
       }

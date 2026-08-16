@@ -12,7 +12,7 @@ import { TestDetailsStep } from "./components/steps/TestDetailsStep";
 import { CityPreferencesStep } from "./components/steps/CityPreferencesStep";
 import { DocumentsStep } from "./components/steps/DocumentsStep";
 import { ReviewStep } from "./components/steps/ReviewStep";
-import { SubmissionStep } from "./components/steps/SubmissionStep";
+import { PaymentDashboard } from "./pages/PaymentDashboard";
 
 export function App() {
   return (
@@ -38,8 +38,17 @@ export function App() {
             <Route path="preferences" element={<CityPreferencesStep />} />
             <Route path="documents" element={<DocumentsStep />} />
             <Route path="review" element={<ReviewStep />} />
-            <Route path="submit" element={<SubmissionStep />} />
+
           </Route>
+
+          <Route
+            path="/payment"
+            element={
+              <ProtectedRoute>
+                <PaymentDashboard />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/dashboard"
@@ -49,8 +58,6 @@ export function App() {
               </ProtectedRoute>
             }
           />
-
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
     </OnboardingProvider>
