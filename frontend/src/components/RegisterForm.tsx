@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { createUser } from "../api/users";
 import { ApiError, NetworkError } from "../api/client";
 import { useOnboarding } from "../state/OnboardingContext";
@@ -15,6 +15,7 @@ const emptyValues: RegisterFormValues = {
 
 export function RegisterForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUserId, setUserMobile } = useOnboarding();
 
   const [values, setValues] = useState<RegisterFormValues>(emptyValues);
@@ -44,7 +45,7 @@ export function RegisterForm() {
       });
       setUserId(user.id);
       setUserMobile(user.mobile_number);
-      navigate("/verify-otp");
+      navigate("/verify-otp", { state: location.state });
     } catch (err) {
       if (err instanceof ApiError || err instanceof NetworkError) {
         setSubmitError(err.message);

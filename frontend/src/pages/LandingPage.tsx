@@ -1,8 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useOnboarding } from "../state/OnboardingContext";
 import { AppShell } from "../components/layout/AppShell";
 import "./LandingPage.css";
 
 export function LandingPage() {
+  const { userId } = useOnboarding();
+
+  // This page is public-only, by design: an authenticated user is sent
+  // straight to their application home instead, so no applicant-specific
+  // data (name, ID, progress, payment) can ever end up rendered here.
+  if (userId !== null) {
+    return <Navigate to="/home" replace />;
+  }
+
   return (
     <AppShell>
       <section className="hero">

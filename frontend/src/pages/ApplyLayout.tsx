@@ -1,14 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { AppShell } from "../components/layout/AppShell";
-
-const APPLY_STEPS = [
-  { path: "personal", label: "Personal" },
-  { path: "education", label: "Education" },
-  { path: "test", label: "Test" },
-  { path: "preferences", label: "Preferences" },
-  { path: "documents", label: "Documents" },
-  { path: "review", label: "Review" },
-] as const;
+import { APPLY_STEPS } from "../components/constants/applySteps";
 
 export function ApplyLayout() {
   const location = useLocation();
@@ -25,7 +17,7 @@ export function ApplyLayout() {
               <span className="step-rail__marker" aria-hidden="true">
                 {index < currentIndex ? "✓" : index + 1}
               </span>
-              <span className="step-rail__label">{step.label}</span>
+              <span className="step-rail__label">{step.shortLabel}</span>
             </div>
           );
         })}
@@ -43,7 +35,7 @@ export function ApplyLayout() {
           <span>
             Step {currentIndex + 1} of {APPLY_STEPS.length}
           </span>
-          <span>{APPLY_STEPS[currentIndex]?.label}</span>
+          <span>{APPLY_STEPS[currentIndex]?.shortLabel}</span>
         </div>
       </div>
 

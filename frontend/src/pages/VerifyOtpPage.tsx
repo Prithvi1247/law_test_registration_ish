@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { sendOtp, verifyOtp } from "../api/otp";
 import { ApiError, NetworkError } from "../api/client";
 import { useOnboarding } from "../state/OnboardingContext";
@@ -8,7 +8,16 @@ import "../components/AuthForm.css";
 
 export function VerifyOtpPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userId, isVerified, setIsVerified } = useOnboarding();
+
+  // Where ProtectedRoute (or Register/Login) said the person was actually
+  // headed — otherwise the applicant home. Resolved once per render so
+  // both effects/handlers below agree on the same target.
+  function intendedDestination(): string {
+    const from = (location.state as { from?: { pathname?: string } } | null)?.from;
+    return from?.pathname ?? "/home";
+  }
 
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +28,7 @@ export function VerifyOtpPage() {
 
   useEffect(() => {
     if (isVerified) {
-      navigate("/apply/personal");
+      navigate(intendedDestination(), { replace: true });
       return;
     }
     handleSend();
@@ -59,7 +68,7 @@ export function VerifyOtpPage() {
     try {
       await verifyOtp(userId, otp.trim());
       setIsVerified(true);
-      navigate("/apply/personal");
+      navigate(intendedDestination(), { replace: true });
     } catch (err) {
       if (err instanceof ApiError || err instanceof NetworkError) {
         setError(err.message);

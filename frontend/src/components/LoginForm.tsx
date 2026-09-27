@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { login } from "../api/auth";
 import { ApiError, NetworkError } from "../api/client";
 import { useOnboarding } from "../state/OnboardingContext";
@@ -11,6 +11,7 @@ const emptyValues: LoginFormValues = { identifier: "", password: "" };
 
 export function LoginForm() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUserId, setApplicantId, setIsSubmitted, setUserMobile, setIsVerified } = useOnboarding();
 
   const [values, setValues] = useState<LoginFormValues>(emptyValues);
@@ -21,6 +22,13 @@ export function LoginForm() {
   function updateField<K extends keyof LoginFormValues>(field: K, value: string) {
     setValues((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+  }
+
+  // Where ProtectedRoute says the person was actually headed before being
+  // sent here, if anywhere — otherwise the applicant home.
+  function intendedDestination(): string {
+    const from = (location.state as { from?: { pathname?: string } } | null)?.from;
+    return from?.pathname ?? "/home";
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -43,35 +51,31 @@ export function LoginForm() {
 
       if (!user.is_verified) {
         // Unverified account — OTP verification takes priority over
-        // applicant recovery; nothing past this point should run yet.
-        navigate("/verify-otp");
+        // everything else. Carry the intended destination forward so
+        // VerifyOtpPage can resume it once verification succeeds.
+        navigate("/verify-otp", { state: location.state });
         return;
       }
 
+      // Resolve applicant status up front (same recovery lookup as
+      // before), then let HomePage — or wherever the person was actually
+      // headed — own the "what's the right next step" decision, rather
+      // than guessing a hardcoded route here.
       try {
         const applicant = await getApplicantByUserId(user.id);
-        // Existing applicant found.
         setApplicantId(applicant.id);
-        if (applicant.status === "submitted") {
-          // Application is complete and locked.
-          setIsSubmitted(true);
-          navigate("/payment");
-        } else {
-          // Existing draft application — Personal Details loads the
-          // saved data and allows editing.
-          setIsSubmitted(false);
-          navigate("/apply/personal");
-        }
+        setIsSubmitted(applicant.status === "submitted");
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) {
           // Valid user, but no applicant/application exists yet.
           setApplicantId(null);
           setIsSubmitted(false);
-          navigate("/apply/personal");
         } else {
           throw err;
         }
       }
+
+      navigate(intendedDestination(), { replace: true });
     } catch (err) {
       if (err instanceof ApiError || err instanceof NetworkError) {
         setSubmitError(err.message);

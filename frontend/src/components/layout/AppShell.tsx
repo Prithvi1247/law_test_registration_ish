@@ -1,16 +1,26 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../state/OnboardingContext";
 
 /**
- * Shared page chrome: navy header with wordmark + Help/Login-or-Profile
- * nav, a width-constrained <main> slot, and a minimal footer. Purely
- * presentational — reads userId from context only to decide which single
- * nav link to show, and does not redirect or gate anything itself
- * (ProtectedRoute still owns all access control).
+ * Shared page chrome: navy header with wordmark + Help/My-Application-or-
+ * Login nav, a width-constrained <main> slot, and a minimal footer.
+ *
+ * Reads userId from context to decide which nav to show, and owns the one
+ * piece of real behavior here: Logout. Logging out clears all session/
+ * applicant state via OnboardingContext.logout() and replaces the current
+ * history entry with the public landing page, so the back button can't
+ * step straight back into an authenticated view — ProtectedRoute would
+ * redirect anyway, but this keeps the history itself clean too.
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  const { userId } = useOnboarding();
+  const { userId, logout } = useOnboarding();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate("/", { replace: true });
+  }
 
   return (
     <div className="app-shell">
@@ -28,7 +38,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="app-header__nav" aria-label="Account">
             <a href="#help">Help</a>
             {userId !== null ? (
-              <Link to="/dashboard">My Application</Link>
+              <>
+                <Link to="/home">My Application</Link>
+                <button type="button" className="app-header__logout" onClick={handleLogout}>
+                  Logout
+                </button>
+              </>
             ) : (
               <Link to="/login">Log In</Link>
             )}
