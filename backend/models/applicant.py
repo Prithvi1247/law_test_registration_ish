@@ -1,16 +1,15 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, String, func,ForeignKey
+from sqlalchemy import Boolean, Date, DateTime, String, func, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from pydantic import BaseModel
-
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.user import User
+
 
 class Applicant(Base):
     __tablename__ = "applicants"
@@ -65,6 +64,36 @@ class Applicant(Base):
         String(100),
         nullable=False
     )
+
+    # --- NEW: independent special-category flags -----------------------
+    # These stack with `category` and with each other (an applicant can be
+    # SC *and* PWD *and* NRI at the same time). They exist specifically so
+    # app/document_rules.py has something to read — before this, there was
+    # no way to represent "this applicant is PWD" at all.
+    is_pwd: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    is_km: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    is_nagpur_domicile: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    is_defence: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+    # ---------------------------------------------------------------------
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

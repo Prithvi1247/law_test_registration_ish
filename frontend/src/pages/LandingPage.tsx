@@ -6,15 +6,26 @@ import ScrollReveal from "../components/reactbits/ScrollReveal";
 import AccordionGallery from "../components/reactbits/AccordionGallery";
 import "./LandingPage.css";
 
-// Structural placeholders only — swap the `image` URLs for real campus
-// photography whenever it's available. Everything else (layout, motion,
-// captions) is already wired up; only this array needs to change.
 const GALLERY_ITEMS = [
-  { image: "https://picsum.photos/id/1074/900/1200", label: "Campus Grounds" },
-  { image: "https://picsum.photos/id/1067/900/1200", label: "Library" },
-  { image: "https://picsum.photos/id/1048/900/1200", label: "Moot Court Hall" },
-  { image: "https://picsum.photos/id/1076/900/1200", label: "Auditorium" },
-  { image: "https://picsum.photos/id/1080/900/1200", label: "Student Life" },
+  { image: "/src/images/gallery/courtroom.png", label: "Moot Court Hall" },
+  { image: "/src/images/gallery/library.png", label: "Library" },
+  { image: "/src/images/gallery/campus.png", label: "Campus" },
+  { image: "/src/images/gallery/audi.png", label: "Auditorium" },
+  { image: "/src/images/gallery/campuslife.png", label: "Student Life" },
+];
+
+const QUICK_FACTS = [
+  { value: "6", label: "guided steps in the application form" },
+  { value: "Auto-save", label: "pick up where you left off" },
+  { value: "OTP", label: "one-time code verifies your account" },
+  { value: "Online", label: "fee payment from your dashboard" },
+];
+
+const PORTAL_TASKS = [
+  "Register and verify your account",
+  "Choose your test date and centre",
+  "Upload your photo and review your details",
+  "Submit and pay your registration fee",
 ];
 
 const PROCESS_STEPS = [
@@ -40,6 +51,24 @@ const PROCESS_STEPS = [
   },
 ];
 
+const KEY_INFO = [
+  {
+    label: "Documents needed",
+    value: "Recent passport-style photo",
+    detail: "JPG or PNG, under 2 MB",
+  },
+  {
+    label: "Registration fee",
+    value: "Confirmed at payment",
+    detail: "Shown after you submit your application",
+  },
+  {
+    label: "Test dates & centres",
+    value: "Shown live",
+    detail: "Choose them during the application",
+  },
+];
+
 const FAQ_ITEMS = [
   {
     question: "How do I start my application?",
@@ -58,23 +87,22 @@ const FAQ_ITEMS = [
   },
   {
     question: "Can I edit my application after submitting it?",
-    answer: "No — once your application is submitted, it is reviewed as final and locked from further edits.",
+    answer:
+      "No — once your application is submitted, it is reviewed as final and locked from further edits.",
   },
 ];
 
 export function LandingPage() {
   const { userId } = useOnboarding();
 
-  // This page is public-only, by design: an authenticated user is sent
-  // straight to their application home instead, so no applicant-specific
-  // data (name, ID, progress, payment) can ever end up rendered here.
+  // Public-only page: authenticated users go straight to their application home.
   if (userId !== null) {
     return <Navigate to="/home" replace />;
   }
 
   return (
     <AppShell>
-      {/* ---------------------------------------------------------- Hero */}
+      {/* Hero */}
       <section className="hero">
         <div className="hero__copy">
           <p className="hero__eyebrow">Official Admission Portal</p>
@@ -86,8 +114,8 @@ export function LandingPage() {
             delay={90}
           />
           <p className="hero__lede">
-            Register, complete your application in a few guided steps, and track your submission
-            and payment — all in one place.
+            Register, complete your application in a few guided steps, and track your
+            submission and payment — all in one place.
           </p>
           <div className="hero__actions">
             <Link to="/register" className="btn btn-primary btn-shine">
@@ -98,15 +126,30 @@ export function LandingPage() {
             </Link>
           </div>
         </div>
-        <div className="hero__media media-placeholder" aria-hidden="true">
-          <span>Campus image placeholder</span>
+
+        <div className="hero__media">
+          <img src="/src/images/hero.png" alt="SLAT students in the moot court hall" className="hero__image" />
+          {/* <div className="hero__badge">
+            <strong>Your progress is saved</strong>
+            <span>Finish your application at your own pace.</span>
+          </div> */}
         </div>
       </section>
 
-      {/* ------------------------------------------------------ About SLAT */}
+      {/* Quick facts */}
+      <section className="facts" aria-label="Application at a glance">
+        {QUICK_FACTS.map((fact) => (
+          <div key={fact.label} className="facts__item">
+            <span className="facts__value">{fact.value}</span>
+            <span className="facts__label">{fact.label}</span>
+          </div>
+        ))}
+      </section>
+
+      {/* About */}
       <section className="editorial-section">
-        <div className="editorial-section__media media-placeholder" aria-hidden="true">
-          <span>Institution image placeholder</span>
+        <div className="editorial-section__media">
+          <img src="/src/images/gallery/campus.png" alt="" className="editorial-section__image" />
         </div>
         <div className="editorial-section__copy">
           <p className="section-eyebrow">About the Examination</p>
@@ -124,10 +167,17 @@ export function LandingPage() {
             This portal is where you register, complete your application, choose your test date
             and centre, and manage your submission and payment from start to finish.
           </p>
+          <ul className="task-list">
+            {PORTAL_TASKS.map((task) => (
+              <li key={task} className="task-list__item">
+                {task}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
-      {/* ------------------------------------------------- How it works */}
+      {/* Process */}
       <section className="process-section">
         <p className="section-eyebrow section-eyebrow--center">The Process</p>
         <h2 className="process-section__heading">How Your Application Works</h2>
@@ -135,24 +185,20 @@ export function LandingPage() {
           {PROCESS_STEPS.map((step, index) => (
             <li key={step.title} className="process-list__item">
               <span className="process-list__index" aria-hidden="true">
-                {String(index + 1).padStart(2, "0")}
+                {index + 1}
               </span>
-              <div>
-                <h3 className="process-list__title">{step.title}</h3>
-                <p className="process-list__description">{step.description}</p>
-              </div>
+              <h3 className="process-list__title">{step.title}</h3>
+              <p className="process-list__description">{step.description}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      {/* --------------------------------------------------------- Gallery */}
+      {/* Gallery */}
       <section className="gallery-section">
         <p className="section-eyebrow section-eyebrow--center">Campus Life</p>
         <h2 className="gallery-section__heading">A Glimpse of Campus</h2>
-        <p className="gallery-section__note">
-          Photography to be added — hover or focus a panel to explore.
-        </p>
+        <p className="gallery-section__note">Hover or focus a panel to explore.</p>
         <AccordionGallery
           items={GALLERY_ITEMS}
           defaultIndex={2}
@@ -164,29 +210,33 @@ export function LandingPage() {
         />
       </section>
 
-      {/* ----------------------------------------------------- Before you begin */}
+      {/* Before you begin */}
       <section className="key-info-section">
         <h2>Before You Begin</h2>
         <ul className="key-info-list">
-          <li className="key-info-list__item">
-            <span className="key-info-list__label">Documents needed</span>
-            <span className="key-info-list__value">Recent passport-style photo (JPG/PNG, under 2 MB)</span>
-          </li>
-          <li className="key-info-list__item">
-            <span className="key-info-list__label">Registration fee</span>
-            <span className="key-info-list__value">Confirmed at payment, after submission</span>
-          </li>
-          <li className="key-info-list__item">
-            <span className="key-info-list__label">Test dates & centres</span>
-            <span className="key-info-list__value">Shown live during the application process</span>
-          </li>
+          {KEY_INFO.map((info) => (
+            <li key={info.label} className="key-info-list__item">
+              <span className="key-info-list__label">{info.label}</span>
+              <span className="key-info-list__value">{info.value}</span>
+              <span className="key-info-list__detail">{info.detail}</span>
+            </li>
+          ))}
         </ul>
       </section>
 
-      {/* -------------------------------------------------------------- FAQ */}
+      {/* FAQ */}
       <section className="faq-section">
-        <p className="section-eyebrow section-eyebrow--center">Frequently Asked Questions</p>
-        <h2 className="faq-section__heading">Common Questions</h2>
+        <div className="faq-section__intro">
+          <p className="section-eyebrow">Frequently Asked Questions</p>
+          <h2 className="faq-section__heading">Common Questions</h2>
+          <p className="faq-section__text">
+            Everything you need to know before you start. Ready to begin? It takes a few minutes
+            to register.
+          </p>
+          <Link to="/register" className="btn btn-primary">
+            Create your account
+          </Link>
+        </div>
         <div className="faq-list">
           {FAQ_ITEMS.map((item) => (
             <details key={item.question} className="faq-item">
@@ -194,6 +244,22 @@ export function LandingPage() {
               <p className="faq-item__answer">{item.answer}</p>
             </details>
           ))}
+        </div>
+      </section>
+
+      {/* Closing call to action */}
+      <section className="cta-band">
+        <div>
+          <h2 className="cta-band__heading">Start your application today</h2>
+          <p className="cta-band__text">Register, verify, and begin. Your progress is saved as you go.</p>
+        </div>
+        <div className="cta-band__actions">
+          <Link to="/register" className="btn cta-band__primary">
+            Apply Now
+          </Link>
+          <Link to="/login" className="cta-band__link">
+            Log in
+          </Link>
         </div>
       </section>
     </AppShell>

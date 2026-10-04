@@ -9,7 +9,7 @@
 .content-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-top: 3px solid var(--color-brass-600);
+  border-top: 4px solid var(--color-ink-800);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   padding: var(--space-7);
@@ -58,7 +58,7 @@
   font-size: var(--fs-sm);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-ink-600);
+  color: var(--color-ink-800);
   margin-bottom: var(--space-4);
 }
 
@@ -164,7 +164,7 @@
 
 .field select {
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%235D6472' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%23615659' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.875rem center;
   padding-right: 2.25rem;
@@ -178,7 +178,7 @@
 .field input:focus,
 .field select:focus {
   outline: none;
-  border-color: var(--color-brass-600);
+  border-color: var(--color-ink-800);
   box-shadow: 0 0 0 3px var(--color-brass-tint);
 }
 
@@ -339,9 +339,6 @@ fieldset.field {
 }
 
 /* ---- Step indicator ("seal rail") ---- */
-/* Drop into ApplyLayout (or wherever the /apply route shell renders) above
-   the <Outlet />. Purely presentational — pass the active/completed step
-   index from existing route state; no routing logic here. */
 
 .step-rail {
   display: flex;
@@ -421,8 +418,7 @@ fieldset.field {
   color: var(--color-ink-800);
 }
 
-/* Compact fallback for narrow screens: a labeled progress bar instead of
-   the full rail. Toggle via a wrapper class in the layout component. */
+/* Compact fallback for narrow screens */
 .step-rail--compact {
   display: none;
 }

@@ -180,8 +180,8 @@ const AccordionGallery = ({
       ref={rootRef}
       className={`accordion-gallery${vertical ? ' accordion-gallery--vertical' : ''}${className ? ` ${className}` : ''}`}
       style={{
-        '--ag-accent': accentColor,
-        '--ag-overlay': overlayColor,
+        // '--ag-accent': accentColor,
+        // '--ag-overlay': overlayColor,
         '--ag-text': textColor,
         '--ag-gap': `${gap}px`,
         '--ag-radius': `${radius}px`,

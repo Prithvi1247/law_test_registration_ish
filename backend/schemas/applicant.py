@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import date, time
+from datetime import date
 from typing import Literal
 
 CATEGORY_OPTIONS = ("General", "OBC", "SC", "ST", "EWS")
@@ -15,10 +15,16 @@ class ApplicantCreate(BaseModel):
     category: Category
     is_nri: bool
     nationality: str
+    # NEW — independent special-category flags. Default False so existing
+    # frontend payloads that don't send these yet keep working.
+    is_pwd: bool = False
+    is_km: bool = False
+    is_nagpur_domicile: bool = False
+    is_defence: bool = False
 
 
-# NEW — used by PATCH /applicants/{applicant_id}. Deliberately does NOT
-# include user_id: the owning user must never change via an edit.
+# Deliberately does NOT include user_id: the owning user must never change
+# via an edit.
 class ApplicantUpdate(BaseModel):
     full_name: str
     date_of_birth: date
@@ -27,6 +33,10 @@ class ApplicantUpdate(BaseModel):
     category: Category
     is_nri: bool
     nationality: str
+    is_pwd: bool = False
+    is_km: bool = False
+    is_nagpur_domicile: bool = False
+    is_defence: bool = False
 
 
 class ApplicantResponse(BaseModel):
@@ -40,4 +50,8 @@ class ApplicantResponse(BaseModel):
     category: str
     is_nri: bool
     nationality: str
+    is_pwd: bool
+    is_km: bool
+    is_nagpur_domicile: bool
+    is_defence: bool
     status: str
