@@ -6,7 +6,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ApplyLayout } from "./pages/ApplyLayout";
-import { HomePage } from "./pages/HomePage";
+import { HomePage } from "./pages/Homepage";
 import { PersonalDetailsForm } from "./components/PersonalDetailsForm";
 import { EducationStep } from "./components/steps/EducationStep";
 import { TestDetailsStep } from "./components/steps/TestDetailsStep";

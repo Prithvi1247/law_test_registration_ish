@@ -14,7 +14,7 @@
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-pill, 9999px);
-  color: #ffffff;
+  color: #ebe8e8;
   font-family: inherit;
   font-size: var(--fs-sm, 0.875rem);
   padding: 0.3rem 0.75rem 0.3rem 0.6rem;
@@ -190,18 +190,23 @@
   padding: 0.6rem 0.8rem;
   font-size: var(--fs-sm, 0.875rem);
   font-family: inherit;
-  color: #fdf3f3;
-  background: #ffffff;
+  
+  /* Force dark readable text */
+  color: #1a1a1a !important;
+  background-color: #ffffff !important;
 }
 
+/* Explicit placeholder styling */
 .chatbot-panel__form input::placeholder {
-  color: #6b7280;
+  color: #6b7280 !important;
+  opacity: 1;
 }
 
 .chatbot-panel__form input:focus {
   outline: none;
   border-color: var(--color-brass-600, #d4af37);
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+  color: #1a1a1a !important;
 }
 
 .chatbot-panel__form button {
