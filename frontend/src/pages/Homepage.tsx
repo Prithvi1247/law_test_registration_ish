@@ -8,7 +8,7 @@ import { useOnboarding } from "../state/OnboardingContext";
 import { AppShell } from "../components/layout/AppShell";
 import { APPLY_STEPS } from "../components/constants/applySteps";
 import type { ApplicationReview, PaymentDashboard as PaymentDashboardType } from "../types/onboarding";
-import "./HomePage.css";
+import "./Homepage.css";
 
 // Derives per-step completion from the same review payload every step
 // component already prefills itself from — nothing here is fabricated or
