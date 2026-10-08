@@ -168,7 +168,7 @@ export function ReviewStep() {
         {documents.length > 0 ? (
           <ul style={{ margin: 0 }}>
             {documents.map((d, i) => (
-              <li key={i}>{d.document_type}: {d.original_filename ?? d.file_url}</li>
+              <li key={i}>{d.document_type}: {d.original_filename ?? "uploaded document"}</li>
             ))}
           </ul>
         ) : (

@@ -1,0 +1,7 @@
+# New dependencies introduced by the chatbot module.
+# Merge these into the project's existing requirements.txt rather than
+# installing separately, if one already exists.
+
+openai>=1.50.0      # OpenAI-compatible SDK, pointed at Gemini's endpoint
+pypdf>=4.0.0         # PDF text extraction for ingestion (offline script only)
+numpy>=1.26.0        # in-memory vector similarity search

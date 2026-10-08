@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../state/OnboardingContext";
-
+import { ChatWidget, clearChatHistory } from "../chatbot/ChatWidget";
+import ReactMarkdown from "react-markdown";
 /**
  * Shared page chrome: navy header with wordmark + Help/My-Application-or-
  * Login nav, a width-constrained <main> slot, and a minimal footer.
@@ -19,6 +20,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   function handleLogout() {
     logout();
+    clearChatHistory();
     navigate("/", { replace: true });
   }
 
@@ -36,6 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <nav className="app-header__nav" aria-label="Account">
+            <ChatWidget />
             <a href="#help">Help</a>
             {userId !== null ? (
               <>
@@ -50,9 +53,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-
+ 
       <main className="app-main">{children}</main>
-
+ 
       <footer className="app-footer">
         <p style={{ margin: 0 }}>
           © 2026 SLAT Admissions. All rights reserved. · <a href="#privacy">Privacy</a> ·{" "}

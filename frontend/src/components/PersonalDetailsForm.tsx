@@ -1,3 +1,4 @@
+// PersonalDetailsForm.tsx
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { emptyPersonalDetails, type PersonalDetails } from "../types/onboarding";

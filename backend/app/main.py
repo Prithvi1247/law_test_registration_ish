@@ -1,5 +1,5 @@
 # app/main.py
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Form
 from sqlalchemy.orm import Session
 from models.user import User
 from schemas.user import UserResponse, UserCreate, UserLogin
@@ -52,8 +52,17 @@ from app.otp import (
 )
 from datetime import datetime, timezone, timedelta
 
+from chatbot.router import router as chatbot_router
+
+from documents.requirements import get_required_documents
+from schemas.document import (
+    RequiredDocumentsResponse,
+    DocumentCompletionResponse,
+)
+
 app = FastAPI(title="SLAT Registration API")
 
+app.include_router(chatbot_router, prefix="/chatbot", tags=["chatbot"])
 
 def ensure_draft(applicant: Applicant):
     if applicant.status != "draft":
@@ -494,63 +503,169 @@ def delete_test_selection(
 @app.post("/applicants/{applicant_id}/documents")
 async def upload_document(
     applicant_id: int,
+    document_type: str = Form(...),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    applicant = db.query(Applicant).filter(
-        Applicant.id == applicant_id
-    ).first()
+    # ---------------------------------------------------------
+    # Find applicant
+    # ---------------------------------------------------------
+
+    applicant = (
+        db.query(Applicant)
+        .filter(Applicant.id == applicant_id)
+        .first()
+    )
 
     if not applicant:
-        raise HTTPException(status_code=404, detail="Applicant not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Applicant not found",
+        )
 
     ensure_draft(applicant)
 
-    allowed_types = {"image/jpeg", "image/png"}
+    # ---------------------------------------------------------
+    # Check whether this document is required
+    # ---------------------------------------------------------
+
+    required_documents = get_required_documents(applicant)
+
+    required_types = {
+        document.document_type
+        for document in required_documents
+    }
+
+    if document_type not in required_types:
+        raise HTTPException(
+            status_code=400,
+            detail="This document is not required for this applicant",
+        )
+
+    # ---------------------------------------------------------
+    # Validate file type
+    # ---------------------------------------------------------
+
+    allowed_types = {
+        "image/jpeg",
+        "image/png",
+        "application/pdf",
+    }
 
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Only JPG and PNG images are allowed")
+        raise HTTPException(
+            status_code=400,
+            detail="Only JPG, PNG and PDF files are allowed",
+        )
+
+    # ---------------------------------------------------------
+    # Read file
+    # ---------------------------------------------------------
 
     file_bytes = await file.read()
 
-    if len(file_bytes) > 2 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size must be below 2 MB")
+    if not file_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file is empty",
+        )
 
-    existing_photo = db.query(ApplicantDocument).filter(
-        ApplicantDocument.applicant_id == applicant_id,
-        ApplicantDocument.document_type == "PHOTO"
-    ).first()
+    MAX_FILE_SIZE = 5 * 1024 * 1024
 
-    extension = file.filename.split(".")[-1]
-    file_path = f"{applicant_id}/{uuid4()}.{extension}"
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="File size must be below 5 MB",
+        )
 
-    print(test_storage(supabase))
+    # ---------------------------------------------------------
+    # Check existing document
+    # ---------------------------------------------------------
+
+    existing_document = (
+        db.query(ApplicantDocument)
+        .filter(
+            ApplicantDocument.applicant_id == applicant_id,
+            ApplicantDocument.document_type == document_type,
+        )
+        .first()
+    )
+
+    # ---------------------------------------------------------
+    # Generate storage path
+    # ---------------------------------------------------------
+
+    original_filename = file.filename or "document"
+
+    if "." in original_filename:
+        extension = original_filename.rsplit(".", 1)[-1].lower()
+    else:
+        extension = ""
+
+    generated_filename = str(uuid4())
+
+    if extension:
+        generated_filename = f"{generated_filename}.{extension}"
+
+    storage_path = (
+        f"{applicant_id}/documents/"
+        f"{document_type}/{generated_filename}"
+    )
+
+    # ---------------------------------------------------------
+    # Upload to Supabase Storage
+    # ---------------------------------------------------------
 
     try:
         supabase.storage.from_(BUCKET_NAME).upload(
-            file_path,
+            storage_path,
             file_bytes,
-            {"content-type": file.content_type}
+            {
+                "content-type": file.content_type,
+            },
         )
+
     except Exception as e:
         print("STORAGE ERROR:", repr(e))
-        raise HTTPException(status_code=500, detail=f"Storage upload failed: {str(e)}")
 
-    if existing_photo:
+        raise HTTPException(
+            status_code=500,
+            detail="Storage upload failed",
+        )
+
+    # ---------------------------------------------------------
+    # Delete old version if replacing
+    # ---------------------------------------------------------
+
+    if existing_document:
+
         try:
-            supabase.storage.from_(BUCKET_NAME).remove([existing_photo.file_url])
-        except Exception as e:
-            print("STORAGE CLEANUP WARNING (old photo not removed):", repr(e))
+            supabase.storage.from_(BUCKET_NAME).remove(
+                [existing_document.storage_path]
+            )
 
-        db.delete(existing_photo)
+        except Exception as e:
+            print(
+                "STORAGE CLEANUP WARNING:",
+                repr(e),
+            )
+
+        db.delete(existing_document)
+        db.flush()
+
+    # ---------------------------------------------------------
+    # Save database record
+    # ---------------------------------------------------------
 
     document = ApplicantDocument(
         applicant_id=applicant_id,
-        document_type="PHOTO",
-        file_url=file_path,
-        original_filename=file.filename,
-        mime_type=file.content_type,
-        file_size_bytes=len(file_bytes)
+        document_type=document_type,
+        storage_path=storage_path,
+        original_filename=original_filename,
+        content_type=file.content_type,
+        file_size=len(file_bytes),
+        upload_status="uploaded",
+        verification_status="pending",
     )
 
     db.add(document)
@@ -560,8 +675,60 @@ async def upload_document(
     return {
         "message": "Document uploaded successfully",
         "document_id": document.id,
-        "document_type": document.document_type
+        "document_type": document.document_type,
     }
+
+@app.get("/applicants/{applicant_id}/documents")
+async def get_applicant_documents(
+    applicant_id: int,
+    db: Session = Depends(get_db),
+):
+    applicant = (
+        db.query(Applicant)
+        .filter(Applicant.id == applicant_id)
+        .first()
+    )
+
+    if not applicant:
+        raise HTTPException(
+            status_code=404,
+            detail="Applicant not found",
+        )
+
+    documents = (
+        db.query(ApplicantDocument)
+        .filter(
+            ApplicantDocument.applicant_id == applicant_id
+        )
+        .all()
+    )
+
+    required_documents = get_required_documents(applicant)
+
+    labels = {
+        document.document_type: document.document_label
+        for document in required_documents
+    }
+
+    return [
+        {
+            "id": document.id,
+            "applicant_id": document.applicant_id,
+            "document_type": document.document_type,
+            "document_label": labels.get(
+                document.document_type,
+                document.document_type,
+            ),
+            "original_filename": document.original_filename,
+            "content_type": document.content_type,
+            "file_size": document.file_size,
+            "upload_status": document.upload_status,
+            "verification_status": document.verification_status,
+            "created_at": document.created_at,
+            "updated_at": document.updated_at,
+        }
+        for document in documents
+    ]
 
 
 @app.get(
@@ -816,3 +983,92 @@ def initiate_payment(
     db.refresh(payment)
 
     return payment
+
+
+@app.get("/applicants/{applicant_id}/required-documents")
+async def get_applicant_required_documents(
+    applicant_id: int,
+    db: Session = Depends(get_db),
+):
+    applicant = (
+        db.query(Applicant)
+        .filter(Applicant.id == applicant_id)
+        .first()
+    )
+
+    if not applicant:
+        raise HTTPException(
+            status_code=404,
+            detail="Applicant not found",
+        )
+
+    required_documents = get_required_documents(applicant)
+
+    return {
+        "applicant_id": applicant.id,
+        "required_documents": [
+            {
+                "document_type": document.document_type,
+                "document_label": document.document_label,
+            }
+            for document in required_documents
+        ],
+    }
+
+@app.get("/applicants/{applicant_id}/documents/completion")
+async def get_document_completion(
+    applicant_id: int,
+    db: Session = Depends(get_db),
+):
+    applicant = (
+        db.query(Applicant)
+        .filter(Applicant.id == applicant_id)
+        .first()
+    )
+
+    if not applicant:
+        raise HTTPException(
+            status_code=404,
+            detail="Applicant not found",
+        )
+
+    required_documents = get_required_documents(applicant)
+
+    required_types = [
+        document.document_type
+        for document in required_documents
+    ]
+
+    uploaded_documents = (
+        db.query(ApplicantDocument)
+        .filter(
+            ApplicantDocument.applicant_id == applicant_id,
+            ApplicantDocument.upload_status == "uploaded",
+        )
+        .all()
+    )
+
+    uploaded_types = {
+        document.document_type
+        for document in uploaded_documents
+    }
+
+    uploaded = [
+        document_type
+        for document_type in required_types
+        if document_type in uploaded_types
+    ]
+
+    missing = [
+        document_type
+        for document_type in required_types
+        if document_type not in uploaded_types
+    ]
+
+    return {
+        "applicant_id": applicant_id,
+        "required": required_types,
+        "uploaded": uploaded,
+        "missing": missing,
+        "is_complete": len(missing) == 0,
+    }

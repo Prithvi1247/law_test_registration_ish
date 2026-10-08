@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, date
 from pydantic import BaseModel
 
 
@@ -32,9 +32,19 @@ class ReviewTestDate(BaseModel):
 
 
 class ReviewDocument(BaseModel):
+    id: int
     document_type: str
+    storage_path: str
     original_filename: str | None
-    file_url: str
+    content_type: str | None
+    file_size: int | None
+    upload_status: str
+    verification_status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class ReviewResponse(BaseModel):

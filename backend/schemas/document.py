@@ -8,11 +8,14 @@ class DocumentResponse(BaseModel):
     applicant_id: int
     document_type: str
     document_label: str
-    original_filename: str | None
-    content_type: str | None
-    file_size: int | None
+
+    original_filename: str | None = None
+    content_type: str | None = None
+    file_size: int | None = None
+
     upload_status: str
     verification_status: str
+
     created_at: datetime
     updated_at: datetime
 
@@ -32,16 +35,9 @@ class RequiredDocumentsResponse(BaseModel):
 
 class DocumentCompletionResponse(BaseModel):
     applicant_id: int
+
     required: list[str]
     uploaded: list[str]
     missing: list[str]
+
     is_complete: bool
-
-
-class AdminDocumentResponse(BaseModel):
-    document_type: str
-    document_label: str
-    original_filename: str | None
-    verification_status: str
-    upload_status: str
-    download_url: str
