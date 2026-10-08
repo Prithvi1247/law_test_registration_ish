@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../state/OnboardingContext";
 import { ChatWidget, clearChatHistory } from "../chatbot/ChatWidget";
-import ReactMarkdown from "react-markdown";
+
 /**
  * Shared page chrome: navy header with wordmark + Help/My-Application-or-
  * Login nav, a width-constrained <main> slot, and a minimal footer.
