@@ -1,8 +1,11 @@
 import { Link, Navigate } from "react-router-dom";
 import { useOnboarding } from "../state/OnboardingContext";
 import { AppShell } from "../components/layout/AppShell";
-import BlurText from "../components/reactbits/BlurText";
+// @ts-ignore
+import BlurText from "../components/reactbits/BlurText" ;
+// @ts-ignore
 import ScrollReveal from "../components/reactbits/ScrollReveal";
+// @ts-ignore
 import AccordionGallery from "../components/reactbits/AccordionGallery";
 import "./LandingPage.css";
 
